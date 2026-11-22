@@ -21,7 +21,8 @@ from ...integrations.locust.adapter import find_locust
 from ...integrations.zap.daemon import ZapDaemon, local_daemon
 from ..components.widgets import label
 from ..workers import run_async
-from .base import AppContext, Form, TestPage, add_headers_field, split_paths
+from ...core.scenario import body_type_of
+from .base import AppContext, Form, TestPage, add_headers_field, add_scenario_field, split_paths
 
 __test__ = False
 
@@ -45,6 +46,11 @@ class LoadTestPage(TestPage):
         form.float("interval", "الفاصل بين الطلبات", 0.0, 60.0, 1.0,
                    "انتظار كل مستخدم بين طلب وآخر (زمن التفكير)", "ث", step=0.1)
         self.add_request_fields(form)
+        form.text("body", "جسم الطلب (اختياري)", "",
+                  "يُرسَل مع كل طلب عند اختيار POST/PUT/PATCH/DELETE. form أو JSON. "
+                  "لهدف موثّق الملكية. يُكتشف النوع تلقائياً",
+                  "username=qa&password=x  أو  {\"q\": \"load\"}")
+        add_scenario_field(form)
         self.backend = form.choice("backend", "المحرك", [("المحرك الداخلي (httpx)", Backend.INTERNAL)],
                                    "Locust و k6 اختياريان ويظهران عند تثبيتهما")
         self._apply_preset()
@@ -75,12 +81,17 @@ class LoadTestPage(TestPage):
 
     def build_config(self, target: AuthorizedTarget | None) -> TestConfig:
         f = self.form
+        extra: dict[str, object] = {}
+        body = f.value("body")
+        if body:
+            extra = {"_body": body, "body_type": body_type_of(body)}
         return self.base_config(
             users=f.value("users"), duration_s=float(f.value("duration")),
             ramp_up_s=float(min(f.value("ramp_up"), f.value("duration"))),
             requests_per_user=f.value("requests_per_user"), interval_s=f.value("interval"),
             method=f.value("method") or "GET", paths=split_paths(f.value("paths")),
-            rate_limit_rps=f.value("rps"), backend=Backend(f.value("backend") or "internal"))
+            rate_limit_rps=f.value("rps"), backend=Backend(f.value("backend") or "internal"),
+            extra=extra)
 
 
 class StressTestPage(TestPage):

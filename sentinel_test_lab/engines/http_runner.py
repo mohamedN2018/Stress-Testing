@@ -17,6 +17,7 @@ import httpx
 from ..core.authorization import ensure_request_in_scope
 from ..core.models import LoadStage
 from ..core.safety_manager import peak_users
+from ..core.scenario import BODY_METHODS, CONTENT_TYPES, Step, body_type_of, steps_from_extra
 from .base import EngineContext
 
 ResponseHook = Callable[[httpx.Response | None, int], None]
@@ -30,6 +31,14 @@ def error_kind(exc: BaseException) -> str:
     if isinstance(exc, httpx.RemoteProtocolError):
         return "protocol_error"
     return type(exc).__name__
+
+
+def body_kwargs(body: str, body_type: str = "") -> dict[str, Any]:
+    """httpx keyword arguments that send ``body`` with the matching Content-Type."""
+    if not body:
+        return {}
+    kind = body_type or body_type_of(body) or "text"
+    return {"content": body.encode("utf-8"), "headers": {"Content-Type": CONTENT_TYPES[kind]}}
 
 
 class ScopedHttp:
@@ -73,6 +82,10 @@ class HttpRunner:
         self._request_index = itertools.count(1)
         self._tasks: list[asyncio.Task[None]] = []
         self._client: httpx.AsyncClient | None = None
+        extra = ctx.config.extra
+        self._body = body_kwargs(str(extra.get("_body") or ""), str(extra.get("body_type") or ""))
+        self._steps: list[Step] = steps_from_extra(extra)
+        self._step_stats = [{"requests": 0, "ok": 0, "failed": 0, "total_ms": 0.0} for _ in self._steps]
 
     async def __aenter__(self) -> "HttpRunner":
         peak = max(peak_users(self._ctx.config), 1)
@@ -84,6 +97,12 @@ class HttpRunner:
         if self._client is not None:
             await self._client.aclose()
         self._ctx.metrics.set_users(0)
+        if self._steps:
+            self._ctx.extra_details["scenario"] = [
+                {"step": step.label.partition("?")[0], "requests": stats["requests"], "ok": stats["ok"],
+                 "failed": stats["failed"],
+                 "avg_ms": round(stats["total_ms"] / stats["requests"], 1) if stats["requests"] else None}
+                for step, stats in zip(self._steps, self._step_stats)]
 
     # ------------------------------------------------------------------ stages
     async def run_stage(self, stage: LoadStage, previous_users: int = 0) -> bool:
@@ -156,6 +175,9 @@ class HttpRunner:
         ctx = self._ctx
         config = ctx.config
         assert self._client is not None
+        if self._steps:
+            await self._scenario_user()
+            return
         sent = 0
         while not ctx.guard.stopped:
             if config.requests_per_user and sent >= config.requests_per_user:
@@ -167,7 +189,7 @@ class HttpRunner:
             started = time.perf_counter()
             response: httpx.Response | None = None
             try:
-                response = await self._client.request(config.method, path)
+                response = await self._client.request(config.method, path, **self._body)
                 ctx.metrics.record(response.status_code, (time.perf_counter() - started) * 1000)
             except asyncio.CancelledError:
                 ctx.metrics.record_aborted()
@@ -179,3 +201,55 @@ class HttpRunner:
                 self._on_response(response, index)
             if config.interval_s > 0:
                 await asyncio.sleep(config.interval_s)
+
+    async def _scenario_user(self) -> None:
+        """One user repeating the scenario steps in order, with its own cookie jar.
+
+        For write steps the Django-style ``csrftoken`` cookie (if the site set one) is
+        echoed in ``X-CSRFToken``, as a browser's JavaScript would do.
+        """
+        ctx = self._ctx
+        config = ctx.config
+        client = ctx.new_client(max_connections=1)
+        sent = 0
+        try:
+            while not ctx.guard.stopped:
+                for position, step in enumerate(self._steps):
+                    if config.requests_per_user and sent >= config.requests_per_user:
+                        return
+                    if not await ctx.guard.acquire():
+                        return
+                    kwargs = body_kwargs(step.body, step.body_type)
+                    headers = dict(kwargs.pop("headers", {}))
+                    if step.method in BODY_METHODS:
+                        try:
+                            token = client.cookies.get("csrftoken")
+                        except httpx.CookieConflict:
+                            token = None
+                        if token:
+                            headers["X-CSRFToken"] = token
+                            headers["Referer"] = ctx.target.base_url + step.path
+                    index = next(self._request_index)
+                    stats = self._step_stats[position]
+                    started = time.perf_counter()
+                    response: httpx.Response | None = None
+                    try:
+                        response = await client.request(step.method, step.path, headers=headers, **kwargs)
+                        elapsed = (time.perf_counter() - started) * 1000
+                        ctx.metrics.record(response.status_code, elapsed)
+                    except asyncio.CancelledError:
+                        ctx.metrics.record_aborted()
+                        raise
+                    except httpx.HTTPError as exc:
+                        elapsed = (time.perf_counter() - started) * 1000
+                        ctx.metrics.record(None, elapsed, error_kind(exc))
+                    stats["requests"] += 1
+                    stats["total_ms"] += elapsed
+                    stats["ok" if response is not None and response.status_code < 400 else "failed"] += 1
+                    sent += 1
+                    if self._on_response is not None:
+                        self._on_response(response, index)
+                    if config.interval_s > 0:
+                        await asyncio.sleep(config.interval_s)
+        finally:
+            await client.aclose()

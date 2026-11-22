@@ -105,6 +105,25 @@ def test_verified_public_target_gets_elevated_limits(env):
     assert authorize(env, load(users=10), target, elevated="example.com").users == 10
 
 
+def test_maximum_elevated_run_is_authorized_for_a_trusted_target(env):
+    target = env.add_target("http://127.0.0.1:8000")
+    env.enable_elevated(
+        elevated_max_users=ABSOLUTE_LIMITS.max_users,
+        elevated_max_duration_s=ABSOLUTE_LIMITS.max_duration_s,
+        elevated_max_rps=ABSOLUTE_LIMITS.max_rps,
+        elevated_max_request_budget=ABSOLUTE_LIMITS.max_request_budget,
+    )
+    approved = authorize(
+        env,
+        load(users=ABSOLUTE_LIMITS.max_users, duration_s=ABSOLUTE_LIMITS.max_duration_s,
+             rate_limit_rps=ABSOLUTE_LIMITS.max_rps),
+        target, elevated=target.host,
+    )
+    assert approved.users == ABSOLUTE_LIMITS.max_users
+    assert approved.rate_limit_rps == ABSOLUTE_LIMITS.max_rps
+    assert 0 < approved.request_budget <= ABSOLUTE_LIMITS.max_request_budget
+
+
 def test_absolute_ceiling_cannot_be_configured_away(env):
     target = env.add_target("http://127.0.0.1:8000")
     env.enable_elevated(elevated_max_users=10_000, elevated_max_rps=99_999,
@@ -219,7 +238,8 @@ def test_only_one_run_at_a_time(env):
 
 
 def test_settings_roundtrip_clamps():
-    settings = Settings.from_dict({"elevated_max_users": 999, "unknown": 1, "thresholds": {"max_p95_ms": 1}})
+    settings = Settings.from_dict({"elevated_max_users": ABSOLUTE_LIMITS.max_users + 5000,
+                                   "unknown": 1, "thresholds": {"max_p95_ms": 1}})
     assert settings.elevated_limits().max_users == ABSOLUTE_LIMITS.max_users
     assert settings.thresholds.max_p95_ms == 1
 

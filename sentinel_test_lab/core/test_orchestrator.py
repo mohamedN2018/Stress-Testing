@@ -129,6 +129,7 @@ class TestOrchestrator:
         record, guard, metrics = prepared.record, prepared.guard, prepared.metrics
         outcome = EngineOutcome()
         failure = ""
+        extra_details: dict[str, object] = {}
         settings = self._repo.load_settings()
         self._container = None
         if settings.monitor_container:
@@ -151,6 +152,7 @@ class TestOrchestrator:
                     "zap_api_key": self._secrets.get(ZAP_API_KEY),
                     "cloudflare_token": self._secrets.get(CLOUDFLARE_TOKEN),
                 },
+                extra_details=extra_details,
             )
             engine = self._engine_factory(prepared.config)
             outcome = await self._run_engine(engine, ctx, guard)
@@ -168,6 +170,7 @@ class TestOrchestrator:
             self._tick(prepared)
             if self._container is not None:
                 self._container.stop()
+            outcome.details = {**extra_details, **outcome.details}
             self._finalize(prepared, outcome, failure)
             with self._lock:
                 self._active = None

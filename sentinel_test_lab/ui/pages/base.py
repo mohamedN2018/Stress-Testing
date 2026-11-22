@@ -14,6 +14,7 @@ from PySide6.QtWidgets import (
     QFormLayout,
     QHBoxLayout,
     QLineEdit,
+    QPlainTextEdit,
     QSpinBox,
     QVBoxLayout,
     QWidget,
@@ -23,6 +24,7 @@ from ...app.bootstrap import Container
 from ...core.config import ABSOLUTE_LIMITS, DEFAULT_LIMITS
 from ...core.models import AuthorizedTarget, RunRecord, TestConfig, TestType
 from ...core.safety_manager import parse_headers
+from ...core.scenario import describe_steps, parse_scenario
 from ...core.test_orchestrator import PreparedRun
 from ..components.live_monitor import LiveMonitor
 from ..components.widgets import Badge, Banner, Card, button, label, row, scrollable
@@ -97,6 +99,17 @@ class Form:
         self._add(key, text, widget, tip)
         return widget
 
+    def multiline(self, key: str, text: str, tip: str = "", placeholder: str = "", rows: int = 4) -> QPlainTextEdit:
+        widget = QPlainTextEdit()
+        widget.setPlaceholderText(placeholder)
+        widget.setLayoutDirection(Qt.LayoutDirection.LeftToRight)
+        widget.setFixedHeight(22 * rows)
+        if tip:
+            widget.setToolTip(tip)
+        widget.textChanged.connect(self._on_change)
+        self._add(key, text, widget, tip)
+        return widget
+
     def check(self, key: str, text: str, default: bool = False, tip: str = "") -> QCheckBox:
         widget = QCheckBox(text)
         widget.setChecked(default)
@@ -118,7 +131,17 @@ class Form:
             return widget.currentData()
         if isinstance(widget, QCheckBox):
             return widget.isChecked()
+        if isinstance(widget, QPlainTextEdit):
+            return widget.toPlainText().strip()
         return widget.text().strip()  # type: ignore[union-attr]
+
+
+def add_scenario_field(form: Form) -> None:
+    form.multiline(
+        "scenario", "سيناريو متعدد الخطوات (اختياري)",
+        "سطر لكل خطوة: «METHOD /path [body]». كل مستخدم يكررها بالترتيب بجلسة خاصة. "
+        "خطوات POST/PUT تتطلب هدفاً موثّق الملكية. يتجاهل المسارات أعلاه عند استخدامه.",
+        "POST /accounts/login/ username=qa&password=qa-pass\nGET /dashboard/\nPOST /api/items {\"name\": \"x\"}")
 
 
 def add_headers_field(form: Form) -> None:
@@ -233,6 +256,13 @@ class TestPage(QWidget):
             # values stay in memory only ("_" keys are never saved); the report lists names
             values["extra"] = {**(values.get("extra") or {}), "_headers": headers,
                                "header_names": ", ".join(headers)}
+        scenario_text = self.form.value("scenario") if "scenario" in self.form.widgets else ""
+        if scenario_text:
+            steps = parse_scenario(scenario_text)  # ValueError shown by live validation
+            # bodies may carry test credentials: keep steps in a "_" key, persist only the labels
+            values["extra"] = {**(values.get("extra") or {}),
+                               "_scenario": [s.to_dict() for s in steps],
+                               "scenario_steps": describe_steps(steps)}
         return TestConfig(
             test_type=self.test_type,
             name=self.form.value("name") or self.default_name,

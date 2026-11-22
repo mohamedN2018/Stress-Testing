@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass, field
 from pathlib import Path
-from typing import Callable, Protocol
+from typing import Any, Callable, Protocol
 
 import httpx
 
@@ -25,6 +25,8 @@ class EngineContext:
     work_dir: Path
     emit: Callable[[str], None] = field(default=lambda message: None)
     secrets: dict[str, str] = field(default_factory=dict)
+    # merged into the run's details by the orchestrator (e.g. per-step scenario statistics)
+    extra_details: dict[str, Any] = field(default_factory=dict)
 
     def new_client(self, max_connections: int | None = None) -> httpx.AsyncClient:
         """HTTP client bound to the authorized target. Redirects are never followed."""

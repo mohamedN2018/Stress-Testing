@@ -31,6 +31,7 @@ from .config import (
 from .metrics_collector import MetricsCollector
 from .models import AuthorizedTarget, Backend, TestConfig, TestType
 from .rate_limiter import RateLimiter
+from .scenario import BODY_METHODS, MAX_BODY_BYTES, MAX_STEPS, METHODS, steps_from_extra
 
 # Modules that are only allowed against trusted targets (ownership verified or loopback).
 TRUSTED_ONLY_TYPES = {TestType.FLOOD, TestType.BRUTE_FORCE}
@@ -87,6 +88,41 @@ def validate_custom_headers(config: TestConfig) -> None:
                 f"الترويسة «{name}» غير مسموحة: قد تغيّر وجهة الطلب أو تخفي مصدره.")
         if not isinstance(value, str) or not value or len(value) > 4096 or any(c in value for c in "\r\n\0"):
             raise SafetyViolation(f"قيمة الترويسة «{name}» غير صالحة.")
+
+
+def validate_payload(config: TestConfig, target: AuthorizedTarget) -> None:
+    """Request body / multi-step scenario: bounded, in scope, and only for trusted targets."""
+    body = config.extra.get("_body")
+    try:
+        steps = steps_from_extra(config.extra)
+    except ValueError as exc:
+        raise SafetyViolation(str(exc)) from exc
+    if not body and not steps:
+        return
+    if config.backend != Backend.INTERNAL or config.test_type not in LOAD_TYPES:
+        raise SafetyViolation("جسم الطلب والسيناريو مدعومان في اختبارات الحمل بالمحرك الداخلي فقط.")
+    too_big = f"جسم الطلب يتجاوز الحد ({MAX_BODY_BYTES // 1024} KB)."
+    if body:
+        if not isinstance(body, str) or len(body.encode("utf-8")) > MAX_BODY_BYTES:
+            raise SafetyViolation(too_big)
+        if config.method not in BODY_METHODS:
+            raise SafetyViolation("جسم الطلب يتطلب الطريقة POST أو PUT أو PATCH أو DELETE.")
+    if len(steps) > MAX_STEPS:
+        raise SafetyViolation(f"السيناريو: الحد الأقصى {MAX_STEPS} خطوات.")
+    for step in steps:
+        if step.method not in METHODS:
+            raise SafetyViolation(f"طريقة غير مدعومة في السيناريو: {step.method}")
+        if step.body and step.method not in BODY_METHODS:
+            raise SafetyViolation(f"الطريقة {step.method} لا تحمل body.")
+        if len(step.body.encode("utf-8")) > MAX_BODY_BYTES:
+            raise SafetyViolation(too_big)
+        try:
+            ensure_request_in_scope(target, step.method, step.path)
+        except ScopeError as exc:
+            raise SafetyViolation(f"خطوة السيناريو «{step.label}»: {exc}") from exc
+    if (body or any(step.method in BODY_METHODS for step in steps)) and not target.is_trusted:
+        raise SafetyViolation(
+            "إرسال بيانات (body أو خطوات POST/PUT/PATCH/DELETE) يتطلب هدفاً محلياً أو تم التحقق من ملكيته.")
 
 
 class SafetyViolation(PermissionError):
@@ -255,6 +291,7 @@ class SafetyManager:
                 raise SafetyViolation("يجب تأكيد أن الحساب المستخدم حساب اختبار مخصص لهذا الغرض.")
 
         validate_custom_headers(config)
+        validate_payload(config, target)
         if config.backend != Backend.INTERNAL and config.test_type != TestType.LOAD:
             raise SafetyViolation("محركات Locust و k6 مدعومة لاختبار الحمل فقط.")
 
@@ -274,6 +311,8 @@ class SafetyManager:
     def _check_scope(config: TestConfig, target: AuthorizedTarget) -> None:
         if config.test_type not in LOAD_TYPES:
             return  # assessment engines validate each request through ScopedHttp
+        if config.extra.get("_scenario"):
+            return  # every step was checked by validate_payload
         if not config.paths:
             raise SafetyViolation("حدّد مساراً واحداً على الأقل.")
         try:

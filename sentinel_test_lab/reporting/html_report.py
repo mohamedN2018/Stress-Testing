@@ -39,6 +39,7 @@ EXTRA_LABELS = {
     "test_username": "حساب الاختبار", "mfa": "MFA (إدخال يدوي)", "use_zap": "فحص ZAP",
     "active_scan": "فحص نشط", "content_type": "نوع المحتوى",
     "input_probes": "فحص معالجة المدخلات", "header_names": "ترويسات مخصصة (الأسماء فقط)",
+    "scenario_steps": "خطوات السيناريو", "body_type": "نوع جسم الطلب",
 }
 THRESHOLD_LABELS = {
     "max_error_rate": "أقصى نسبة أخطاء", "max_p95_ms": "أقصى p95 (ms)",
@@ -93,6 +94,14 @@ def detail_tables(record: dict[str, Any]) -> list[dict[str, Any]]:
     kind = record.get("test_type")
     tables: list[dict[str, Any]] = []
     phase_headers = ["المرحلة", "المستخدمون", "الطلبات", "RPS", "avg ms", "p95 ms", "نسبة الأخطاء"]
+    if d.get("scenario"):
+        tables.append({
+            "title": "خطوات السيناريو",
+            "headers": ["الخطوة", "الطلبات", "ناجحة", "فاشلة", "متوسط ms"],
+            "rows": [[s.get("step"), fmt(s.get("requests")), fmt(s.get("ok")), fmt(s.get("failed")),
+                      fmt(s.get("avg_ms"))] for s in d["scenario"]],
+            "note": "كل مستخدم افتراضي ينفّذ هذه الخطوات بالترتيب بجلسة (كوكيز) خاصة به.",
+        })
     if kind == "stress" and d.get("steps"):
         tables.append({
             "title": "مراحل اختبار الإجهاد",

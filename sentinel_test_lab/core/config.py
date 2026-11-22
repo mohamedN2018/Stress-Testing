@@ -31,8 +31,13 @@ class SafetyLimits:
 DEFAULT_LIMITS = SafetyLimits(max_users=5, max_duration_s=60, max_rps=5.0, max_request_budget=300)
 
 # Hard ceilings compiled into the application. No setting can exceed them.
+# Sized to the realistic maximum a single machine can drive through the async
+# engine against a target you own; reaching them still requires a trusted
+# target, elevated limits turned on, and typing the host name. The automatic
+# stop (error rate / p95 / consecutive failures) keeps protecting the target
+# even at these ceilings, so an overwhelmed site halts the run by itself.
 ABSOLUTE_LIMITS = SafetyLimits(
-    max_users=200, max_duration_s=900, max_rps=200.0, max_request_budget=100_000
+    max_users=2_000, max_duration_s=3_600, max_rps=5_000.0, max_request_budget=20_000_000
 )
 
 # Extra hard caps for the sensitive assessment modules.
@@ -68,10 +73,10 @@ class Settings:
     """User-configurable settings persisted in SQLite."""
 
     elevated_enabled: bool = False
-    elevated_max_users: int = 50
-    elevated_max_duration_s: int = 300
-    elevated_max_rps: float = 50.0
-    elevated_max_request_budget: int = 15_000
+    elevated_max_users: int = 500
+    elevated_max_duration_s: int = 1_800
+    elevated_max_rps: float = 1_000.0
+    elevated_max_request_budget: int = 2_000_000
     thresholds: Thresholds = field(default_factory=Thresholds)
     request_timeout_s: float = 10.0
     k6_path: str = ""
