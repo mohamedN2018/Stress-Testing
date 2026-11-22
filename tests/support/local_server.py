@@ -29,6 +29,16 @@ LOGIN_FORM = """<html><body><form method="post">
 <input name="username"><input name="password" type="password"></form></body></html>"""
 
 
+VULN_PAGE = """<html><head>
+<script src="https://cdn.thirdparty.example/jquery-1.12.4.min.js"></script>
+</head><body>
+<!-- TODO: remove debug password before release -->
+<form method="post" action="/vuln/login"><input name="username">
+<input name="password" type="password"></form>
+<script>var cfg = {key: "AKIAIOSFODNN7EXAMPLE", backend: "192.168.10.5"};</script>
+</body></html>"""
+
+
 class LocalTestServer:
     def __init__(self, port: int = 0, verify_token: str = "", rate_limit_after: int = 10,
                  lockout_after: int = 5, degrade_limit: int = 12, ssl_context: Any = None,
@@ -40,8 +50,10 @@ class LocalTestServer:
         self.rate_limit_after = rate_limit_after
         self.lockout_after = lockout_after
         self.degrade_limit = degrade_limit
+        self.expose_files = False  # serve /.git/config and /admin/ (exposure-check tests)
         self.port = 0
         self.hits: list[tuple[float, str, str]] = []
+        self.last_headers: dict[str, str] = {}
         self.max_concurrency = 0
         self.login_bodies: list[dict[str, str]] = []
         self.zap_calls: list[str] = []
@@ -77,6 +89,7 @@ class LocalTestServer:
 
     def reset(self) -> None:
         self.hits.clear()
+        self.last_headers = {}
         self.login_bodies.clear()
         self.zap_calls.clear()
         self.max_concurrency = 0
@@ -107,6 +120,7 @@ class LocalTestServer:
         @web.middleware
         async def track(request: web.Request, handler: Any) -> web.StreamResponse:
             self.hits.append((time.monotonic(), request.method, request.path))
+            self.last_headers = dict(request.headers)
             self._concurrent += 1
             self.max_concurrency = max(self.max_concurrency, self._concurrent)
             try:
@@ -131,6 +145,14 @@ class LocalTestServer:
         r.add_get("/login-open", self.login_page)
         r.add_post("/login-open", self.login_open)
         r.add_get("/.well-known/{name}", self.well_known)
+        # Deliberately vulnerable pages used to verify the detection checks.
+        r.add_get("/vuln", self.vuln_page)
+        r.add_get("/vuln/search", self.vuln_search)
+        r.add_get("/vuln/item", self.vuln_item)
+        r.add_get("/vuln/go", self.vuln_go)
+        r.add_get("/vuln/safe-search", self.vuln_safe_search)
+        r.add_get("/.git/config", self.git_config)
+        r.add_get("/admin/", self.admin)
         r.add_get("/zapapi/JSON/{component}/{kind}/{name}/", self.zap)
         r.add_get("/cfapi/zones", self.cf_zones)
         r.add_get("/cfapi/zones/{zone}/settings/{setting}", self.cf_setting)
@@ -146,6 +168,38 @@ class LocalTestServer:
             response.headers["Access-Control-Allow-Origin"] = request.headers["Origin"]
             response.headers["Access-Control-Allow-Credentials"] = "true"
         return response
+
+    async def vuln_page(self, request: web.Request) -> web.Response:
+        return web.Response(text=VULN_PAGE, content_type="text/html")
+
+    async def vuln_search(self, request: web.Request) -> web.Response:
+        return web.Response(text=f"<html><body>Results for {request.query.get('q', '')}</body></html>",
+                            content_type="text/html")
+
+    async def vuln_safe_search(self, request: web.Request) -> web.Response:
+        import html as html_lib
+        return web.Response(
+            text=f"<html><body>Results for {html_lib.escape(request.query.get('q', ''))}</body></html>",
+            content_type="text/html")
+
+    async def vuln_item(self, request: web.Request) -> web.Response:
+        if "'" in request.query.get("id", ""):
+            return web.Response(status=500, text="sqlite3.OperationalError: unrecognized token: \"'\"")
+        return web.Response(text="item")
+
+    async def vuln_go(self, request: web.Request) -> web.Response:
+        return web.Response(status=302, headers={"Location": request.query.get("next", "/")})
+
+    async def git_config(self, request: web.Request) -> web.Response:
+        if not self.expose_files:
+            return web.Response(status=404, text="not found")
+        return web.Response(text="[core]\n\trepositoryformatversion = 0\n", content_type="text/plain")
+
+    async def admin(self, request: web.Request) -> web.Response:
+        if not self.expose_files:
+            return web.Response(status=404, text="not found")
+        return web.Response(text="<html><title>Log in | Django site admin</title></html>",
+                            content_type="text/html")
 
     async def ok(self, request: web.Request) -> web.Response:
         return web.Response(text="ok")

@@ -141,6 +141,10 @@ def executive_summary(record_dict: dict[str, Any]) -> list[str]:
         lines.append(
             f"الملاحظات: {counts['high']} عالية، {counts['medium']} متوسطة، {counts['low']} منخفضة الخطورة."
         )
+    posture = (record_dict.get("details") or {}).get("posture")
+    if posture:
+        lines.append(
+            f"مؤشر الوضع الأمني: {posture['grade']} ({posture['score']} من 100) — مؤشر تقريبي لما فُحص في هذا التشغيل فقط.")
     if record_dict.get("stop_reason"):
         lines.append(f"سبب التوقف: {record_dict['stop_reason']}.")
     return lines

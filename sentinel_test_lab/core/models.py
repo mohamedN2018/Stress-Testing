@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from dataclasses import asdict, dataclass, field
+from dataclasses import asdict, dataclass, field, fields
 from datetime import datetime, timezone
 from enum import StrEnum
 from typing import Any
@@ -154,6 +154,8 @@ class Finding:
     detail: str = ""
     recommendation: str = ""
     evidence: str = ""
+    cwe: str = ""
+    owasp: str = ""
 
     def to_dict(self) -> dict[str, Any]:
         data = asdict(self)
@@ -164,7 +166,8 @@ class Finding:
     def from_dict(cls, data: dict[str, Any]) -> "Finding":
         data = dict(data)
         data["severity"] = Severity(data["severity"])
-        return cls(**data)
+        known = {f.name for f in fields(cls)}
+        return cls(**{k: v for k, v in data.items() if k in known})
 
 
 @dataclass

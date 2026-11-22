@@ -14,6 +14,7 @@ import structlog
 from ..database.repository import Repository
 from ..engines.base import Engine, EngineContext
 from ..engines.registry import engine_for
+from ..monitoring.container_metrics import ContainerMetricsSampler
 from ..monitoring.system_metrics import SystemMetricsSampler
 from ..reporting.recommendations import analyze_performance, max_sustainable_tested_users
 from .audit import AuditLogger
@@ -73,6 +74,7 @@ class TestOrchestrator:
         self._lock = threading.Lock()
         self._active: PreparedRun | None = None
         self._system = SystemMetricsSampler()
+        self._container: ContainerMetricsSampler | None = None
 
     @property
     def active(self) -> PreparedRun | None:
@@ -127,6 +129,13 @@ class TestOrchestrator:
         record, guard, metrics = prepared.record, prepared.guard, prepared.metrics
         outcome = EngineOutcome()
         failure = ""
+        settings = self._repo.load_settings()
+        self._container = None
+        if settings.monitor_container:
+            self._container = ContainerMetricsSampler(
+                settings.monitor_container, settings.monitor_ssh_host).start()
+            where = settings.monitor_ssh_host or "هذا الجهاز"
+            prepared.emit(f"مراقبة موارد الحاوية «{settings.monitor_container}» على {where}")
         sampler = asyncio.create_task(self._sampler(prepared))
         try:
             await recheck_scope(prepared.target)
@@ -156,7 +165,9 @@ class TestOrchestrator:
             sampler.cancel()
             await asyncio.gather(sampler, return_exceptions=True)
             metrics.finish()
-            metrics.tick(self._system.sample().to_dict())
+            self._tick(prepared)
+            if self._container is not None:
+                self._container.stop()
             self._finalize(prepared, outcome, failure)
             with self._lock:
                 self._active = None
@@ -189,7 +200,12 @@ class TestOrchestrator:
             ticks += 1
             prepared.guard.evaluate()
             if ticks % 4 == 0:
-                prepared.metrics.tick(self._system.sample().to_dict())
+                self._tick(prepared)
+
+    def _tick(self, prepared: PreparedRun) -> None:
+        container = self._container.latest() if self._container is not None else None
+        prepared.metrics.tick(self._system.sample().to_dict(),
+                              {"container": container} if container else None)
 
     def _finalize(self, prepared: PreparedRun, outcome: EngineOutcome, failure: str) -> None:
         record, guard, config = prepared.record, prepared.guard, prepared.config
@@ -211,6 +227,8 @@ class TestOrchestrator:
         summary["metrics_host_scope"] = (
             "target_and_generator" if prepared.target.is_local else "generator_only"
         )
+        if self._container is not None:
+            summary["container_monitor"] = self._container.describe()
         record.summary = summary
         record.details = outcome.details
         record.series = prepared.metrics.series

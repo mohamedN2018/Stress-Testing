@@ -22,6 +22,7 @@ from PySide6.QtWidgets import (
 from ...app.bootstrap import Container
 from ...core.config import ABSOLUTE_LIMITS, DEFAULT_LIMITS
 from ...core.models import AuthorizedTarget, RunRecord, TestConfig, TestType
+from ...core.safety_manager import parse_headers
 from ...core.test_orchestrator import PreparedRun
 from ..components.live_monitor import LiveMonitor
 from ..components.widgets import Badge, Banner, Card, button, label, row, scrollable
@@ -118,6 +119,13 @@ class Form:
         if isinstance(widget, QCheckBox):
             return widget.isChecked()
         return widget.text().strip()  # type: ignore[union-attr]
+
+
+def add_headers_field(form: Form) -> None:
+    form.text("headers", "ترويسات إضافية (اختياري)", "",
+              "لاختبار صفحات تتطلب تسجيل دخول: أرسل كوكي الجلسة أو token حساب اختبار. "
+              "القيم لا تُحفظ ولا تظهر في التقارير",
+              "Cookie: sessionid=… | Authorization: Bearer …")
 
 
 def split_paths(text: str) -> list[str]:
@@ -219,6 +227,12 @@ class TestPage(QWidget):
     # -------------------------------------------------------------- helpers
     def base_config(self, **values: Any) -> TestConfig:
         settings = self.app.container.settings
+        headers_text = self.form.value("headers") if "headers" in self.form.widgets else ""
+        if headers_text:
+            headers = parse_headers(headers_text)
+            # values stay in memory only ("_" keys are never saved); the report lists names
+            values["extra"] = {**(values.get("extra") or {}), "_headers": headers,
+                               "header_names": ", ".join(headers)}
         return TestConfig(
             test_type=self.test_type,
             name=self.form.value("name") or self.default_name,
@@ -231,6 +245,7 @@ class TestPage(QWidget):
         form.text("paths", "المسارات", "/", "مسارات مصرّح بها تفصل بينها فاصلة، مثل: /, /api/health",
                   placeholder="/, /about")
         form.choice("method", "الطريقة", [("GET", "GET")], "الطرق المسموحة تُحدَّد عند تصريح الهدف")
+        add_headers_field(form)
         form.float("rps", "حد المعدل", 0.5, rps_max or ABSOLUTE_LIMITS.max_rps, rps_default,
                    "أقصى عدد طلبات في الثانية من كل المستخدمين مجتمعين. الافتراضي الآمن: 5",
                    "طلب/ث")

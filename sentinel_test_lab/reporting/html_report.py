@@ -38,6 +38,7 @@ EXTRA_LABELS = {
     "recovery_s": "مدة التعافي (ث)", "login_path": "مسار الدخول", "attempts": "عدد المحاولات",
     "test_username": "حساب الاختبار", "mfa": "MFA (إدخال يدوي)", "use_zap": "فحص ZAP",
     "active_scan": "فحص نشط", "content_type": "نوع المحتوى",
+    "input_probes": "فحص معالجة المدخلات", "header_names": "ترويسات مخصصة (الأسماء فقط)",
 }
 THRESHOLD_LABELS = {
     "max_error_rate": "أقصى نسبة أخطاء", "max_p95_ms": "أقصى p95 (ms)",
@@ -141,6 +142,23 @@ def detail_tables(record: dict[str, Any]) -> list[dict[str, Any]]:
                            "rows": [[fmt(a.get("attempt")), fmt(a.get("status")), fmt(a.get("latency_ms")),
                                      fmt(a.get("retry_after"))] for a in d["attempts"]], "note": ""})
     elif kind == "security":
+        posture = d.get("posture")
+        if posture:
+            counts = posture.get("counts") or {}
+            tables.append(_kv("مؤشر الوضع الأمني", [
+                ("التقدير", posture.get("grade")), ("الدرجة من 100", posture.get("score")),
+                ("ملاحظات عالية / متوسطة / منخفضة",
+                 f"{counts.get('high', 0)} / {counts.get('medium', 0)} / {counts.get('low', 0)}"),
+                ("طريقة الحساب", posture.get("formula")),
+            ]))
+            tables[-1]["note"] = ("مؤشر تقريبي مبني على ملاحظات هذا التشغيل فقط؛ ليس شهادة أمان، "
+                                  "ولا يغطي ما لم يُفحص.")
+            if posture.get("by_owasp"):
+                tables.append({"title": "الملاحظات حسب OWASP Top 10", "headers": ["الفئة", "العدد"],
+                               "rows": [[k, fmt(v)] for k, v in posture["by_owasp"].items()], "note": ""})
+        if d.get("coverage"):
+            tables.append({"title": "ما تم فحصه في هذا التشغيل", "headers": ["الفحص", "النتيجة"],
+                           "rows": [[c["check"], c["result"]] for c in d["coverage"]], "note": ""})
         if d.get("pages"):
             tables.append({"title": "الصفحات المفحوصة", "headers": ["المسار", "الحالة", "الكوكيز"],
                            "rows": [[p.get("path", ""), fmt(p.get("status")) if "status" in p else p.get("error", ""),
@@ -189,6 +207,21 @@ def detail_tables(record: dict[str, Any]) -> list[dict[str, Any]]:
             ("أقصى RAM", fmt(max(ram), "%") if ram else None),
             ("مقاييس الخادم البعيد / قاعدة البيانات", NOT_AVAILABLE if scope != "target_and_generator" else "مشمولة أعلاه (نفس الجهاز)"),
         ], note))
+    monitor = (record.get("summary") or {}).get("container_monitor")
+    if monitor:
+        samples = [s["container"] for s in record.get("series") or [] if s.get("container")]
+        c_cpu = [s["cpu_percent"] for s in samples if s.get("cpu_percent") is not None]
+        c_mem = [s["mem_used_mb"] for s in samples if s.get("mem_used_mb") is not None]
+        limit = next((s["mem_limit_mb"] for s in samples if s.get("mem_limit_mb")), None)
+        tables.append(_kv("موارد حاوية الخادم (Docker): " + str(monitor.get("container")), [
+            ("الخادم", monitor.get("host")),
+            ("أقصى CPU", fmt(max(c_cpu), "%") if c_cpu else None),
+            ("متوسط CPU", fmt(sum(c_cpu) / len(c_cpu), "%") if c_cpu else None),
+            ("أقصى ذاكرة", fmt(max(c_mem), "MB") if c_mem else None),
+            ("حد الذاكرة", fmt(limit, "MB") if limit else None),
+            ("عدد العينات", monitor.get("samples")),
+            ("خطأ القراءة", monitor.get("error") or "لا يوجد"),
+        ], "قيم docker stats للحاوية المحددة في الإعدادات. CPU قد يتجاوز 100% على خادم متعدد الأنوية."))
     return tables
 
 

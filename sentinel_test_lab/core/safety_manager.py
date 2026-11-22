@@ -9,6 +9,7 @@
 from __future__ import annotations
 
 import math
+import re
 import threading
 import time
 from dataclasses import replace
@@ -46,6 +47,46 @@ LOAD_TYPES = {TestType.LOAD, TestType.STRESS, TestType.SPIKE, TestType.FLOOD}
 STOP_USER = "user"
 STOP_SAFETY = "safety"
 STOP_LIMIT = "limit"
+
+
+# Headers that could move a request to another site or disguise where it comes from.
+FORBIDDEN_HEADERS = frozenset({
+    "host", "content-length", "transfer-encoding", "connection", "upgrade", "te", "trailer",
+    "user-agent", "forwarded", "via", "x-real-ip", "true-client-ip", "cf-connecting-ip",
+    "x-client-ip", "x-cluster-client-ip", "x-originating-ip", "x-remote-ip", "x-remote-addr",
+})
+HEADER_NAME = re.compile(r"^[A-Za-z0-9!#$%&'*+.^_`|~-]{1,64}$")
+MAX_CUSTOM_HEADERS = 10
+
+
+def parse_headers(text: str) -> dict[str, str]:
+    """'Name: value | Name: value' -> dict. Malformed parts are kept so validation rejects them."""
+    headers: dict[str, str] = {}
+    for part in text.replace("\n", "|").split("|"):
+        if not part.strip():
+            continue
+        name, _, value = part.partition(":")
+        headers[name.strip()] = value.strip()
+    return headers
+
+
+def validate_custom_headers(config: TestConfig) -> None:
+    headers = config.extra.get("_headers")
+    if not headers:
+        return
+    if not isinstance(headers, dict) or len(headers) > MAX_CUSTOM_HEADERS:
+        raise SafetyViolation(f"الترويسات المخصصة: الحد الأقصى {MAX_CUSTOM_HEADERS} ترويسات.")
+    if config.backend != Backend.INTERNAL:
+        raise SafetyViolation("الترويسات المخصصة مدعومة في المحرك الداخلي فقط.")
+    for name, value in headers.items():
+        if not isinstance(name, str) or not HEADER_NAME.match(name):
+            raise SafetyViolation(f"ترويسة غير صالحة «{name}». الصيغة: Name: value | Name: value")
+        lowered = name.lower()
+        if lowered in FORBIDDEN_HEADERS or lowered.startswith("x-forwarded"):
+            raise SafetyViolation(
+                f"الترويسة «{name}» غير مسموحة: قد تغيّر وجهة الطلب أو تخفي مصدره.")
+        if not isinstance(value, str) or not value or len(value) > 4096 or any(c in value for c in "\r\n\0"):
+            raise SafetyViolation(f"قيمة الترويسة «{name}» غير صالحة.")
 
 
 class SafetyViolation(PermissionError):
@@ -151,6 +192,9 @@ class SafetyManager:
             raise SafetyViolation(
                 "هذا النوع من الاختبارات متاح فقط لهدف محلي (loopback) أو لهدف تم التحقق من ملكيته."
             )
+        if config.extra.get("input_probes") and not target.is_trusted:
+            raise SafetyViolation(
+                "فحص معالجة المدخلات يرسل قيماً اختبارية؛ يتطلب هدفاً محلياً أو تم التحقق من ملكيته.")
         if config.extra.get("active_scan"):
             if not target.is_trusted:
                 raise SafetyViolation("الفحص النشط (Active Scan) يتطلب هدفاً تم التحقق من ملكيته.")
@@ -210,6 +254,7 @@ class SafetyManager:
             if not config.extra.get("test_account_confirmed"):
                 raise SafetyViolation("يجب تأكيد أن الحساب المستخدم حساب اختبار مخصص لهذا الغرض.")
 
+        validate_custom_headers(config)
         if config.backend != Backend.INTERNAL and config.test_type != TestType.LOAD:
             raise SafetyViolation("محركات Locust و k6 مدعومة لاختبار الحمل فقط.")
 

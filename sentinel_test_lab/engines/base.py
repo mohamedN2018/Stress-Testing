@@ -36,7 +36,8 @@ class EngineContext:
             limits=httpx.Limits(max_connections=connections, max_keepalive_connections=connections),
             verify=self.target.verify_tls,
             trust_env=False,  # never route through system proxies
-            headers={"User-Agent": USER_AGENT},
+            # "_headers" is run-time only: validated by SafetyManager and never persisted.
+            headers={**(self.config.extra.get("_headers") or {}), "User-Agent": USER_AGENT},
         )
 
 

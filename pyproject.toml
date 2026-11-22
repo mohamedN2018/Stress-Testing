@@ -1,6 +1,6 @@
 [project]
 name = "sentinel-test-lab"
-version = "1.0.0"
+version = "1.1.0"
 description = "Authorized website load, resilience and defensive security testing desktop application"
 readme = "README.md"
 requires-python = ">=3.12,<3.14"
@@ -49,4 +49,5 @@ markers = [
     "locust: tests that require the optional locust package",
     "k6: tests that require the k6 binary",
     "zap: tests that require an OWASP ZAP installation (slow: starts the daemon)",
+    "docker: tests that read real `docker stats` (skipped when Docker is not running)",
 ]

@@ -7,7 +7,7 @@
 
 ## التشغيل السريع
 
-شغّل الاختصار **Sentinel Test Lab** في هذا المجلد، أو مباشرةً:
+بعد البناء (انظر «للمطوّرين») شغّل:
 
 ```
 dist\SentinelTestLab\SentinelTestLab.exe
@@ -32,7 +32,7 @@ dist\SentinelTestLab\SentinelTestLab.exe
 | اختبار الإجهاد | Stress | عند أي مستوى يبدأ الأداء بالتدهور؟ |
 | | Spike | هل يتعافى الموقع بعد قفزة مفاجئة؟ |
 | | HTTP Flood Resilience | هل تحديد المعدل (429) يعمل؟ |
-| التقييم الأمني | الثغرات والإعدادات | ترويسات الأمان، TLS، الكوكيز، DEBUG، ملفات مكشوفة |
+| التقييم الأمني | الثغرات والإعدادات | ترويسات الأمان، TLS، الكوكيز، CSRF، أسرار ظاهرة، مكتبات قديمة، ملفات ولوحات مكشوفة، XSS / SQL Injection / Open Redirect (كشف فقط) — مع تصنيف CWE و OWASP Top 10 ومؤشر A–F |
 | | الجاهزية ضد DDoS | هل يوجد CDN/WAF وكاش؟ هل الخادم الأصلي مكشوف؟ |
 | | الحماية من Brute Force | هل يُقفل الحساب أو يُقيَّد بعد محاولات فاشلة؟ |
 
@@ -53,12 +53,14 @@ dist\SentinelTestLab\SentinelTestLab.exe
 | k6 2.4.0 | مثبت ومُختبَر فعلياً |
 | OWASP ZAP 2.17.0 | مثبت ومُختبَر فعلياً؛ يُشغَّل تلقائياً عند اختيار فحص ZAP |
 | Locust | مُختبَر فعلياً (من الكود المصدري) |
+| Docker (`docker stats`) | مُختبَر فعلياً محلياً؛ عبر SSH غير مُجرَّب على خادم حقيقي |
 | Cloudflare API | مبني، لم يُجرَّب على حساب حقيقي (يحتاج token) |
 
 ## ما يجب معرفته
 
 - لم يُجرَّب التطبيق على موقع حقيقي على الإنترنت بعد؛ كل الاختبارات كانت على خادم محلي.
-- مقاييس الخادم البعيد وقاعدة البيانات **غير متاحة**؛ المعروض هو موارد جهازك.
+- موارد الخادم تُقرأ من حاوية Docker (محلياً أو عبر SSH) إن حدّدتها في الإعدادات؛ مقاييس قاعدة البيانات **غير متاحة**.
+- مراقبة الحاوية عبر SSH لم تُجرَّب على خادم بعيد حقيقي بعد (المحلية مُختبَرة).
 - فحص ZAP النشط يرسل طلبات إلى الموقع كله، لذلك يتطلب هدفاً موثوقاً نطاقه كل الموقع.
 - التقييم الأمني سطحي وغير اقتحامي، ولا يغني عن اختبار اختراق احترافي.
 
@@ -71,7 +73,7 @@ dist\SentinelTestLab\SentinelTestLab.exe
 | [docs/INSTALL.md](docs/INSTALL.md) | التثبيت، التجربة الأولى، التكاملات، البناء |
 | [docs/SAFETY.md](docs/SAFETY.md) | محرك الأمان والاستخدام المسؤول |
 | [docs/CAPABILITIES.md](docs/CAPABILITIES.md) | المدعوم وغير المدعوم |
-| [docs/TEST_RESULTS.md](docs/TEST_RESULTS.md) | نتائج الاختبارات (194 ناجحة) |
+| [docs/TEST_RESULTS.md](docs/TEST_RESULTS.md) | نتائج الاختبارات (237 ناجحة) |
 | [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) | بنية الكود وكيفية التوسعة |
 | [docs/ROADMAP.md](docs/ROADMAP.md) | خطة التطوير المستقبلية (تخطيط فقط) |
 | [examples/](examples/) | تقارير مثال من اختبارات محلية حقيقية |
@@ -80,7 +82,7 @@ dist\SentinelTestLab\SentinelTestLab.exe
 
 ```
 sentinel_test_lab/   الكود: app, core, engines, integrations, monitoring, reporting, database, ui
-tests/               194 اختباراً + خوادم الاختبار المحلية
+tests/               237 اختباراً + خوادم الاختبار المحلية
 scripts/             توليد التقارير المثال، لقطات الواجهة، الأيقونة
 docs/                الوثائق واللقطات
 examples/            تقارير مثال (PDF/HTML/JSON/CSV)

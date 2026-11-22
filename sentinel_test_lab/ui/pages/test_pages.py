@@ -21,7 +21,7 @@ from ...integrations.locust.adapter import find_locust
 from ...integrations.zap.daemon import ZapDaemon, local_daemon
 from ..components.widgets import label
 from ..workers import run_async
-from .base import AppContext, Form, TestPage, split_paths
+from .base import AppContext, Form, TestPage, add_headers_field, split_paths
 
 __test__ = False
 
@@ -178,7 +178,11 @@ class SecurityTestPage(TestPage):
     def build_form(self, form: Form) -> None:
         self._zap_starting = False
         self._zap_error = ""
-        form.text("paths", "الصفحات", "/", "صفحات تُفحص ترويساتها وكوكيزها، تفصل بينها فاصلة", "/, /login")
+        form.text("paths", "الصفحات", "/", "صفحات تُفحص، تفصل بينها فاصلة. أضف المعاملات لفحص المدخلات",
+                  "/, /login, /search?q=test")
+        add_headers_field(form)
+        form.check("input_probes", "فحص معالجة المدخلات (XSS / SQL Injection / Open Redirect)", False,
+                   "كشف فقط بقيم غير ضارة على معاملات الصفحات المكتوبة أعلاه. لهدف محلي أو موثّق الملكية")
         self.zap_box = form.check("use_zap", "تضمين فحص OWASP ZAP السلبي", False,
                                   "يمرّر الصفحات المحددة عبر ZAP ويقرأ تنبيهاته. يُشغَّل ZAP تلقائياً إن كان مثبتاً")
         self.zap_note = label("", "Hint", wrap=True)
@@ -256,7 +260,7 @@ class SecurityTestPage(TestPage):
     def build_config(self, target: AuthorizedTarget | None) -> TestConfig:
         f = self.form
         active = bool(f.value("active_scan"))
-        extra = {"use_zap": bool(f.value("use_zap"))}
+        extra = {"use_zap": bool(f.value("use_zap")), "input_probes": bool(f.value("input_probes"))}
         if active:
             extra.update(active_scan=True, active_scan_confirmed=bool(f.value("active_scan_confirmed")))
         return self.base_config(users=1, duration_s=float(f.value("active_duration")) if active else 60.0,

@@ -332,3 +332,12 @@ async def test_stop_is_thread_safe():
     while await g.acquire():
         await asyncio.sleep(0.001)
     assert g.stop_kind == STOP_USER
+
+
+def test_input_probes_need_a_trusted_target(env):
+    local = env.add_target("http://127.0.0.1:8000")
+    public = env.add_target("https://example.com", name="pub", **PUBLIC)
+    probes = load(test_type=TestType.SECURITY, users=1, extra={"input_probes": True})
+    with pytest.raises(SafetyViolation):
+        authorize(env, probes, public)
+    assert authorize(env, probes, local)

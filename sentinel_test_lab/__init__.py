@@ -2,7 +2,7 @@
 
 from pathlib import Path
 
-__version__ = "1.0.0"
+__version__ = "1.1.0"
 APP_NAME = "Sentinel Test Lab"
 USER_AGENT = f"SentinelTestLab/{__version__} (authorized-testing)"
 

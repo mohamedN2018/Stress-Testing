@@ -43,9 +43,9 @@ def to_csv(run: RunRecord) -> str:
             value = json.dumps(value, ensure_ascii=False)
         writer.writerow(["summary", key, "" if value is None else value])
     writer.writerow([])
-    writer.writerow(["severity", "category", "title", "detail", "recommendation", "evidence"])
+    writer.writerow(["severity", "category", "title", "detail", "recommendation", "evidence", "cwe", "owasp"])
     for f in run.findings:
-        writer.writerow([f.severity.value, f.category, f.title, f.detail, f.recommendation, f.evidence])
+        writer.writerow([f.severity.value, f.category, f.title, f.detail, f.recommendation, f.evidence, f.cwe, f.owasp])
     writer.writerow([])
     writer.writerow([*SERIES_COLUMNS, *SYSTEM_COLUMNS])
     for sample in run.series:

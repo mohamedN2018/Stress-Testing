@@ -1,4 +1,4 @@
-# نتائج الاختبارات — Sentinel Test Lab 1.0.0
+# نتائج الاختبارات — Sentinel Test Lab 1.1.0
 
 التاريخ: 2026-11-22 · Windows 11 · Python 3.12.15 · PySide6 6.10.3 · k6 2.4.0 · OWASP ZAP 2.17.0 · Locust 2.47.0
 
@@ -6,13 +6,13 @@
 
 ```
 .venv\Scripts\python.exe -m pytest tests -q
-194 passed in 210.20s
+237 passed in 316.31s
 ```
 
 | الملف | العدد | ماذا يغطي |
 |---|---|---|
 | `unit/test_authorization.py` | 40 | تحليل URL، تصنيف الشبكات، قواعد التصريح، نطاق المسارات والطرق |
-| `unit/test_safety_manager.py` | 43 | الحدود الافتراضية والمرفوعة والسقف المطلق، القواعد الخاصة بكل نوع، `RunGuard` |
+| `unit/test_safety_manager.py` | 44 | الحدود الافتراضية والمرفوعة والسقف المطلق، القواعد الخاصة بكل نوع، `RunGuard` |
 | `unit/test_metrics_and_storage.py` | 16 | histogram، جامع المقاييس، تعدد الخيوط، SQLite والـ migrations |
 | `unit/test_analyzers.py` | 11 | محللات الترويسات والكوكيز و CDN، تحليل الأداء، الملخص التنفيذي |
 | `unit/test_reporting.py` | 14 | الرسوم، HTML، PDF، JSON، CSV |
@@ -20,6 +20,10 @@
 | `integration/test_integrations.py` | 15 | فحص الهدف، توثيق الملكية، Locust الحقيقي، **k6 الحقيقي**، عملاء ZAP و Cloudflare |
 | `integration/test_tls_dns.py` | 10 | فحص TLS مقابل خادم HTTPS محلي، توثيق الملكية وفحوص DDoS مقابل خادم DNS محلي |
 | `integration/test_zap_real.py` | 3 | **ZAP الحقيقي**: تشغيل الـ daemon، الفحص السلبي، الفحص النشط |
+| `unit/test_webapp_analysis.py` | 11 | تحليل HTML (CSRF، أسرار، مكتبات قديمة، SRI)، تصنيف CWE/OWASP، مؤشر الوضع الأمني |
+| `integration/test_vuln_detection.py` | 7 | كشف الثغرات مقابل صفحات معطوبة عمداً في الخادم المحلي: XSS، SQL، Open Redirect، ملفات مكشوفة |
+| `integration/test_custom_headers.py` | 11 | الترويسات المخصصة: تصل الخادم، لا تُحفظ، والخطِرة مرفوضة |
+| `integration/test_container_metrics.py` | 13 | تحليل `docker stats` و**Docker الحقيقي**: عينات فعلية داخل تشغيل وفي التقرير |
 | `integration/test_ui.py` | 16 | النافذة الحقيقية تشغّل اختبارات حقيقية (pytest-qt)، ومسار «فحص وتشغيل» بضغطة واحدة |
 
 اختبارات التكامل ترسل طلبات HTTP حقيقية إلى `tests/support/local_server.py` على `127.0.0.1`،
@@ -37,6 +41,10 @@
 | ميزانية الطلبات دقيقة | `test_request_budget_is_exact` | 7 طلبات بالضبط عند ميزانية 7 |
 | الإيقاف التلقائي | `test_auto_stop_when_target_returns_errors`، `test_auto_stop_when_target_is_down` | ناجح |
 | رفض التشغيل غير المصرّح | `test_rejected_run_sends_nothing` ومجموعة `test_safety_manager.py` | لا يُرسَل أي طلب عند الرفض |
+| كشف الثغرات يعمل فعلاً | `test_input_probes_detect_reflection_sql_error_and_open_redirect` | يكتشف الثلاث على الصفحات المعطوبة، ولا يبلّغ عن الصفحة السليمة |
+| الفحوص تحترم النطاق | `test_exposure_checks_respect_path_scope` | لا يصل الخادم أي طلب خارج المسار المصرّح |
+| الأسرار لا تتسرب إلى التقارير | `test_headers_reach_the_server_but_are_never_stored`، `test_secrets_are_reported_masked_never_in_full` | القيمة غير موجودة في القاعدة ولا السجلات ولا التقارير |
+| منع إخفاء المصدر | `test_dangerous_or_malformed_headers_are_rejected` | `Host` و `X-Forwarded-For` وأمثالها مرفوضة |
 | لا تشغيل بلا تأكيد | `test_one_click_flow_never_starts_without_confirmation` | لا فحص ولا حفظ ولا طلبات |
 | شهادة غير موثوقة لا تُقبل بصمت | `test_load_over_https_and_certificate_verification` | صفر طلبات ناجحة وإيقاف تلقائي |
 | عدم متابعة redirects | `test_redirects_are_never_followed` | ناجح |
@@ -84,6 +92,9 @@
 - **Cloudflare API على حساب حقيقي** (يحتاج token من حسابك). اختُبر العميل مقابل خادم وهمي فقط.
 - **أي موقع حقيقي على الإنترنت**: كل التشغيلات كانت على `127.0.0.1`. فحص CDN/DDoS وتوثيق الملكية لم يُجرَّبا على نطاق عام.
 - تشغيل Locust و k6 و ZAP **من داخل الـ exe**: اختُبرت من الكود المصدري؛ الـ exe اختُبر بالمحرك الداخلي.
+- مراقبة حاوية Docker **عبر SSH** على خادم بعيد حقيقي (المحلية مُختبَرة على Docker فعلي).
+- كشف الثغرات على موقع حقيقي: اختُبر مقابل صفحات معطوبة عمداً في الخادم المحلي فقط، فنسبة الإنذارات
+  الخاطئة على مواقع حقيقية غير معروفة بعد.
 - أنظمة غير Windows 11، وشاشات HiDPI.
 
 التفاصيل في `CAPABILITIES.md`.

@@ -78,6 +78,8 @@ class Settings:
     locust_path: str = ""
     zap_url: str = ""
     zap_path: str = ""  # folder of a local ZAP installation (empty = default location)
+    monitor_container: str = ""  # Docker container serving the site (empty = no server metrics)
+    monitor_ssh_host: str = ""   # ssh host/alias of the server running it (empty = this machine)
     cloudflare_api_base: str = "https://api.cloudflare.com/client/v4"
 
     def elevated_limits(self) -> SafetyLimits:

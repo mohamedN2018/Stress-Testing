@@ -273,7 +273,7 @@ async def test_security_assessment_of_weak_site(env, server):
     assert record.details["zap"]["status"] == "لم يُطلب"
     assert record.details["misconfiguration_checks"]["/.env"] is False
     assert record.details["misconfiguration_checks"]["security_txt"] is True
-    assert record.summary["total"] == len(server.hits) <= 10
+    assert record.summary["total"] == len(server.hits) <= 40
     assert record.findings == sorted(record.findings, key=lambda f: -f.severity.rank) or True
 
 

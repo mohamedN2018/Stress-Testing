@@ -47,7 +47,7 @@
 <tr><th bgcolor="#f1f5f9" width="11%" align="right">الخطورة</th><th bgcolor="#f1f5f9" width="49%" align="right">الملاحظة</th><th bgcolor="#f1f5f9" width="40%" align="right">التوصية</th></tr>
 {% for f in findings %}
 <tr><td><b style="color:{{ severity_colors[f.severity] }};">{{ f.severity_label }}</b></td>
-<td><b>{{ f.title }}</b>{% if f.detail %}<br>{{ f.detail }}{% endif %}</td>
+<td><b>{{ f.title }}</b>{% if f.detail %}<br>{{ f.detail }}{% endif %}{% if f.cwe or f.owasp %}<br><span style="color:#64748b; font-size:8pt;">{{ f.cwe }} {{ f.owasp }}</span>{% endif %}</td>
 <td>{{ f.recommendation or "—" }}</td></tr>
 {% endfor %}
 </table>

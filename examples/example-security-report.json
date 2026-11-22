@@ -1,14 +1,14 @@
 {
-  "generator": "Sentinel Test Lab 1.0.0",
+  "generator": "Sentinel Test Lab 1.1.0",
   "id": 2,
   "name": "مثال: تقييم أمني للخادم المحلي",
   "test_type": "security",
   "target_id": 1,
-  "target_url": "http://127.0.0.1:61275",
+  "target_url": "http://127.0.0.1:64664",
   "status": "completed",
   "backend": "internal",
-  "started_at": "2026-11-22T00:25:52+00:00",
-  "finished_at": "2026-11-22T00:25:54+00:00",
+  "started_at": "2026-11-22T01:20:01+00:00",
+  "finished_at": "2026-11-22T01:20:07+00:00",
   "stop_reason": "",
   "config": {
     "test_type": "security",
@@ -36,28 +36,28 @@
     "extra": {}
   },
   "summary": {
-    "elapsed_s": 1.27,
-    "total": 7,
+    "elapsed_s": 6.05,
+    "total": 31,
     "success": 4,
-    "failed": 3,
+    "failed": 27,
     "s2xx": 4,
     "s3xx": 0,
-    "s4xx": 3,
+    "s4xx": 27,
     "s5xx": 0,
     "s429": 0,
     "transport_errors": 0,
     "aborted": 0,
-    "rps": 5.51,
-    "avg_ms": 4.37,
-    "p50_ms": 3.0,
-    "p90_ms": 9.67,
-    "p95_ms": 9.67,
-    "p99_ms": 9.67,
-    "min_ms": 2.59,
-    "max_ms": 9.67,
-    "error_rate": 0.4286,
+    "rps": 5.12,
+    "avg_ms": 2.81,
+    "p50_ms": 2.72,
+    "p90_ms": 3.31,
+    "p95_ms": 3.8,
+    "p99_ms": 4.59,
+    "min_ms": 2.38,
+    "max_ms": 4.59,
+    "error_rate": 0.871,
     "error_kinds": {},
-    "peak_rps": 4.78,
+    "peak_rps": 5.81,
     "peak_users": 0,
     "max_sustainable_tested_users": null,
     "request_budget": 151,
@@ -74,7 +74,7 @@
           "content-type": "text/html; charset=utf-8",
           "set-cookie": "sessionid=abc123; Path=/",
           "content-length": "50",
-          "date": "Sun, 22 Nov 2026 00:25:53 GMT"
+          "date": "Sun, 22 Nov 2026 01:20:01 GMT"
         },
         "cookies": 1
       }
@@ -89,34 +89,228 @@
       "cors_allow_origin": "https://sentinel-cors-probe.example",
       "security_txt": true
     },
+    "exposure_checks": {
+      "/.git/config": false,
+      "/.svn/entries": false,
+      "/.DS_Store": false,
+      "/.htpasswd": false,
+      "/.aws/credentials": false,
+      "/id_rsa": false,
+      "/db.sqlite3": false,
+      "/backup.sql": false,
+      "/dump.sql": false,
+      "/docker-compose.yml": false,
+      "/Dockerfile": false,
+      "/settings.py": false,
+      "/wp-config.php.bak": false,
+      "/config.php.bak": false,
+      "/phpinfo.php": false,
+      "/server-status": false,
+      "/debug.log": false,
+      "/admin/": false,
+      "/phpmyadmin/": false,
+      "/wp-login.php": false,
+      "/swagger/": false,
+      "/api/docs": false,
+      "/openapi.json": false,
+      "/actuator/env": false
+    },
+    "input_probes": {
+      "status": "لم يُطلب"
+    },
     "tls": {
       "available": false,
       "note": "الهدف ليس HTTPS"
-    }
+    },
+    "posture": {
+      "score": 41,
+      "grade": "D",
+      "counts": {
+        "info": 1,
+        "low": 5,
+        "medium": 3,
+        "high": 1
+      },
+      "by_owasp": {
+        "A02:2021 Cryptographic Failures": 1,
+        "A05:2021 Security Misconfiguration": 8
+      },
+      "formula": "100 − (20 × عالية + 8 × متوسطة + 3 × منخفضة)"
+    },
+    "coverage": [
+      {
+        "check": "ترويسات الأمان والكوكيز",
+        "result": "1 صفحة"
+      },
+      {
+        "check": "تحليل HTML: النماذج، CSRF، السكربتات، الأسرار، المكتبات",
+        "result": "1 صفحة"
+      },
+      {
+        "check": "صفحات الأخطاء، CORS، استعراض المجلدات",
+        "result": "تم"
+      },
+      {
+        "check": "ملفات ولوحات مكشوفة",
+        "result": "24 من 24 فحصاً"
+      },
+      {
+        "check": "TLS والشهادة",
+        "result": "تم"
+      },
+      {
+        "check": "معالجة المدخلات (XSS / SQL / Open Redirect)",
+        "result": "لم يُطلب"
+      },
+      {
+        "check": "OWASP ZAP",
+        "result": "لم يُطلب"
+      }
+    ]
   },
   "series": [
     {
-      "t": 1.05,
+      "t": 1.06,
       "users": 0,
       "phase": "",
-      "rps": 4.78,
-      "requests": 7,
+      "rps": 4.71,
+      "requests": 5,
       "failed": 3,
-      "s2xx": 4,
+      "s2xx": 2,
       "s3xx": 0,
       "s4xx": 3,
       "s5xx": 0,
       "s429": 0,
-      "avg_ms": 4.37,
-      "p95_ms": 9.67,
-      "error_rate": 0.4286,
+      "avg_ms": 3.15,
+      "p95_ms": 4.59,
+      "error_rate": 0.6,
       "system": {
-        "cpu_percent": 21.4,
-        "ram_percent": 49.3,
-        "ram_used_mb": 32188.8,
-        "disk_percent": 73.0,
-        "net_sent_kbps": 101.8,
-        "net_recv_kbps": 2414.7
+        "cpu_percent": 15.9,
+        "ram_percent": 49.0,
+        "ram_used_mb": 31945.0,
+        "disk_percent": 73.4,
+        "net_sent_kbps": 2.2,
+        "net_recv_kbps": 16.6
+      }
+    },
+    {
+      "t": 2.11,
+      "users": 0,
+      "phase": "",
+      "rps": 5.73,
+      "requests": 6,
+      "failed": 4,
+      "s2xx": 2,
+      "s3xx": 0,
+      "s4xx": 4,
+      "s5xx": 0,
+      "s429": 0,
+      "avg_ms": 2.77,
+      "p95_ms": 3.77,
+      "error_rate": 0.6667,
+      "system": {
+        "cpu_percent": 15.2,
+        "ram_percent": 49.0,
+        "ram_used_mb": 31953.9,
+        "disk_percent": 73.4,
+        "net_sent_kbps": 134.2,
+        "net_recv_kbps": 20.8
+      }
+    },
+    {
+      "t": 3.11,
+      "users": 0,
+      "phase": "",
+      "rps": 5.0,
+      "requests": 5,
+      "failed": 5,
+      "s2xx": 0,
+      "s3xx": 0,
+      "s4xx": 5,
+      "s5xx": 0,
+      "s429": 0,
+      "avg_ms": 2.65,
+      "p95_ms": 2.73,
+      "error_rate": 1.0,
+      "system": {
+        "cpu_percent": 13.4,
+        "ram_percent": 49.0,
+        "ram_used_mb": 31960.2,
+        "disk_percent": 73.4,
+        "net_sent_kbps": 2.6,
+        "net_recv_kbps": 19.6
+      }
+    },
+    {
+      "t": 4.17,
+      "users": 0,
+      "phase": "",
+      "rps": 4.7,
+      "requests": 5,
+      "failed": 5,
+      "s2xx": 0,
+      "s3xx": 0,
+      "s4xx": 5,
+      "s5xx": 0,
+      "s429": 0,
+      "avg_ms": 2.63,
+      "p95_ms": 2.78,
+      "error_rate": 1.0,
+      "system": {
+        "cpu_percent": 12.1,
+        "ram_percent": 49.0,
+        "ram_used_mb": 31943.8,
+        "disk_percent": 73.4,
+        "net_sent_kbps": 1.9,
+        "net_recv_kbps": 22.7
+      }
+    },
+    {
+      "t": 5.19,
+      "users": 0,
+      "phase": "",
+      "rps": 4.93,
+      "requests": 5,
+      "failed": 5,
+      "s2xx": 0,
+      "s3xx": 0,
+      "s4xx": 5,
+      "s5xx": 0,
+      "s429": 0,
+      "avg_ms": 2.78,
+      "p95_ms": 3.25,
+      "error_rate": 1.0,
+      "system": {
+        "cpu_percent": 15.1,
+        "ram_percent": 49.0,
+        "ram_used_mb": 31972.5,
+        "disk_percent": 73.4,
+        "net_sent_kbps": 149.8,
+        "net_recv_kbps": 64.7
+      }
+    },
+    {
+      "t": 6.05,
+      "users": 0,
+      "phase": "",
+      "rps": 5.81,
+      "requests": 5,
+      "failed": 5,
+      "s2xx": 0,
+      "s3xx": 0,
+      "s4xx": 5,
+      "s5xx": 0,
+      "s429": 0,
+      "avg_ms": 2.89,
+      "p95_ms": 3.09,
+      "error_rate": 1.0,
+      "system": {
+        "cpu_percent": 16.5,
+        "ram_percent": 48.9,
+        "ram_used_mb": 31895.9,
+        "disk_percent": 73.4,
+        "net_sent_kbps": 10.1,
+        "net_recv_kbps": 30.9
       }
     }
   ],
@@ -127,7 +321,9 @@
       "title": "CORS يعكس أي Origin مع السماح بالـ credentials",
       "detail": "أي موقع خارجي يستطيع قراءة ردود المستخدم المسجَّل.",
       "recommendation": "قيّد Access-Control-Allow-Origin بقائمة نطاقات محددة.",
-      "evidence": "ACAO: https://sentinel-cors-probe.example"
+      "evidence": "ACAO: https://sentinel-cors-probe.example",
+      "cwe": "CWE-942",
+      "owasp": "A05:2021 Security Misconfiguration"
     },
     {
       "severity": "medium",
@@ -135,7 +331,9 @@
       "title": "ترويسة Content-Security-Policy غير موجودة",
       "detail": "لا توجد سياسة تحد من مصادر السكربتات (تخفيف XSS).",
       "recommendation": "عرّف CSP تبدأ بـ default-src 'self' وشدّدها تدريجياً.",
-      "evidence": ""
+      "evidence": "",
+      "cwe": "CWE-693",
+      "owasp": "A05:2021 Security Misconfiguration"
     },
     {
       "severity": "medium",
@@ -143,7 +341,9 @@
       "title": "ترويسة X-Frame-Options غير موجودة",
       "detail": "الصفحة قابلة للتضمين داخل iframe (Clickjacking).",
       "recommendation": "أضف X-Frame-Options: DENY أو CSP frame-ancestors 'none'.",
-      "evidence": ""
+      "evidence": "",
+      "cwe": "CWE-1021",
+      "owasp": "A05:2021 Security Misconfiguration"
     },
     {
       "severity": "medium",
@@ -151,7 +351,9 @@
       "title": "الكوكي «sessionid»: بدون HttpOnly، بدون SameSite",
       "detail": "خصائص الكوكي الناقصة تسهّل سرقتها أو إساءة استخدامها (XSS/CSRF/اعتراض).",
       "recommendation": "عيّن Secure و HttpOnly و SameSite=Lax (أو Strict) لكوكيز الجلسات.",
-      "evidence": "sessionid"
+      "evidence": "sessionid",
+      "cwe": "CWE-1004",
+      "owasp": "A05:2021 Security Misconfiguration"
     },
     {
       "severity": "low",
@@ -159,7 +361,9 @@
       "title": "ترويسة X-Content-Type-Options غير موجودة",
       "detail": "المتصفح قد يخمّن نوع المحتوى (MIME sniffing).",
       "recommendation": "أضف X-Content-Type-Options: nosniff",
-      "evidence": ""
+      "evidence": "",
+      "cwe": "CWE-693",
+      "owasp": "A05:2021 Security Misconfiguration"
     },
     {
       "severity": "low",
@@ -167,7 +371,9 @@
       "title": "ترويسة Referrer-Policy غير موجودة",
       "detail": "قد تتسرب عناوين الصفحات إلى مواقع خارجية.",
       "recommendation": "أضف Referrer-Policy: strict-origin-when-cross-origin",
-      "evidence": ""
+      "evidence": "",
+      "cwe": "CWE-200",
+      "owasp": "A05:2021 Security Misconfiguration"
     },
     {
       "severity": "low",
@@ -175,7 +381,9 @@
       "title": "الترويسة server تكشف معلومات عن الخادم",
       "detail": "معرفة التقنية والإصدار تسهّل استهداف ثغرات معروفة.",
       "recommendation": "أخفِ أو عمّم هذه الترويسة من إعدادات الخادم.",
-      "evidence": "server: TestServer/1.0"
+      "evidence": "server: TestServer/1.0",
+      "cwe": "CWE-200",
+      "owasp": "A05:2021 Security Misconfiguration"
     },
     {
       "severity": "low",
@@ -183,7 +391,9 @@
       "title": "الترويسة x-powered-by تكشف معلومات عن الخادم",
       "detail": "معرفة التقنية والإصدار تسهّل استهداف ثغرات معروفة.",
       "recommendation": "أخفِ أو عمّم هذه الترويسة من إعدادات الخادم.",
-      "evidence": "x-powered-by: TestStack 2.3"
+      "evidence": "x-powered-by: TestStack 2.3",
+      "cwe": "CWE-200",
+      "owasp": "A05:2021 Security Misconfiguration"
     },
     {
       "severity": "low",
@@ -191,7 +401,9 @@
       "title": "الهدف يعمل عبر HTTP بدون تشفير",
       "detail": "كل البيانات تنتقل كنص صريح.",
       "recommendation": "فعّل HTTPS بشهادة صالحة وحوّل HTTP إليه.",
-      "evidence": ""
+      "evidence": "",
+      "cwe": "CWE-326",
+      "owasp": "A02:2021 Cryptographic Failures"
     },
     {
       "severity": "info",
@@ -199,7 +411,9 @@
       "title": "ترويسة Permissions-Policy غير موجودة",
       "detail": "لا توجد قيود على واجهات المتصفح (كاميرا، موقع...).",
       "recommendation": "أضف Permissions-Policy بما يناسب تطبيقك.",
-      "evidence": ""
+      "evidence": "",
+      "cwe": "CWE-693",
+      "owasp": "A05:2021 Security Misconfiguration"
     }
   ]
 }

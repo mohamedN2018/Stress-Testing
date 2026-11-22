@@ -150,13 +150,16 @@ class LiveMonitor(QWidget):
         strip.setSpacing(8)
         for key, title, unit in (("cpu_percent", "CPU", "%"), ("ram_percent", "RAM", "%"),
                                  ("disk_percent", "القرص", "%"), ("net_sent_kbps", "الشبكة ↑", "kbps"),
-                                 ("net_recv_kbps", "الشبكة ↓", "kbps"), ("db", "قاعدة البيانات", "")):
+                                 ("net_recv_kbps", "الشبكة ↓", "kbps"), ("c_cpu", "حاوية CPU", "%"),
+                                 ("c_mem", "حاوية RAM", "MB"), ("db", "قاعدة البيانات", "")):
             card = StatCard(title, unit)
             card.value_label.setStyleSheet("font-size: 11.5pt;")
             card.setMinimumWidth(96)
             self.host_stats[key] = card
             strip.addWidget(card, 1)
         self.host_stats["db"].setToolTip("لا يوجد تكامل لمراقبة قواعد البيانات في هذا الإصدار")
+        for key in ("c_cpu", "c_mem"):
+            self.host_stats[key].setToolTip("موارد حاوية Docker الخاصة بالخادم؛ اخترها من الإعدادات")
         host.add(strip)
         layout.addWidget(host)
         return tab
@@ -250,8 +253,12 @@ class LiveMonitor(QWidget):
         self.error_chart.set_data("429", xs, [s["s429"] for s in series])
 
         system = series[-1].get("system") if series else None
+        container = next((s["container"] for s in reversed(series[-5:]) if s.get("container")), None)
         for key, card in self.host_stats.items():
-            value = None if key == "db" or not system else system.get(key)
+            if key in ("c_cpu", "c_mem"):
+                value = (container or {}).get("cpu_percent" if key == "c_cpu" else "mem_used_mb")
+            else:
+                value = None if key == "db" or not system else system.get(key)
             card.set_value(value, digits=0 if key.startswith("net") else 1)
 
         duration = max(prepared.config.duration_s, 0.1)

@@ -76,6 +76,7 @@ uv pip install --python .venv\Scripts\python.exe -r requirements-dev.txt
 | OWASP ZAP | `winget install --id ZAP.ZAP --source winget` (يتطلب Java 17+) | لا شيء: يُشغَّل تلقائياً عند اختيار فحص ZAP |
 | Locust | `pip install locust` | يُكتشف تلقائياً من PATH، أو حدّد المسار |
 | Cloudflare | أنشئ API token بصلاحية «Zone → Read» فقط | الصق الـ token في الإعدادات |
+| مراقبة حاوية Docker | Docker Desktop محلياً، أو خادمك عبر `ssh` بمفتاح | الإعدادات ← «اكتشاف الحاويات» ← اختر حاوية الموقع |
 
 **على هذا الجهاز k6 v2.4.0 و ZAP 2.17.0 مثبتان ومُختبَران.**
 

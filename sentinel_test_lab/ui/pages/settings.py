@@ -7,10 +7,12 @@ import json
 from PySide6.QtCore import Qt
 from PySide6.QtWidgets import (
     QCheckBox,
+    QComboBox,
     QDoubleSpinBox,
     QFileDialog,
     QFormLayout,
     QLineEdit,
+    QMessageBox,
     QSpinBox,
     QVBoxLayout,
     QWidget,
@@ -19,6 +21,7 @@ from PySide6.QtWidgets import (
 from ...core.config import ABSOLUTE_LIMITS, DEFAULT_LIMITS, Settings
 from ...core.secrets_store import CLOUDFLARE_TOKEN, ZAP_API_KEY
 from ...integrations.status import IntegrationStatus, local_status, zap_status
+from ...monitoring.container_metrics import ContainerMetricsError, list_containers
 from ...reporting.html_report import local_time
 from ..components.exporting import open_path
 from ..components.widgets import Banner, Card, button, confirm, fill_table, label, make_table, row, scrollable
@@ -136,6 +139,16 @@ class SettingsPage(QWidget):
         form.addRow("ZAP daemon خارجي (اختياري)", self.zap_url)
         form.addRow("مفتاح ZAP API", self.zap_key)
         form.addRow("Cloudflare API token", self.cf_token)
+        self.monitor_container = QComboBox()
+        self.monitor_container.setEditable(True)
+        self.monitor_container.setLayoutDirection(Qt.LayoutDirection.LeftToRight)
+        self.monitor_container.lineEdit().setPlaceholderText("فارغ = بدون مراقبة الخادم")
+        discover = button("اكتشاف الحاويات")
+        discover.clicked.connect(self._discover_containers)
+        self.monitor_ssh = _ltr(QLineEdit())
+        self.monitor_ssh.setPlaceholderText("فارغ = Docker على هذا الجهاز · مثال: root@my-server")
+        form.addRow("حاوية الموقع (Docker)", row(self.monitor_container, discover))
+        form.addRow("خادم SSH للحاوية (اختياري)", self.monitor_ssh)
         integrations.add(form)
         integrations.add(label("المفاتيح تُحفظ في Windows Credential Manager وليس في ملفات التطبيق. "
                                "اترك الحقل فارغاً للإبقاء على القيمة المحفوظة.", "Hint", wrap=True))
@@ -187,12 +200,30 @@ class SettingsPage(QWidget):
         self.k6_path.setText(settings.k6_path)
         self.locust_path.setText(settings.locust_path)
         self.zap_url.setText(settings.zap_url)
+        self.monitor_container.setEditText(settings.monitor_container)
+        self.monitor_ssh.setText(settings.monitor_ssh_host)
         secrets = self.app.container.secrets
         self.zap_key.setPlaceholderText("محفوظ ●●●●" if secrets.get(ZAP_API_KEY) else "لا يوجد مفتاح محفوظ")
         self.cf_token.setPlaceholderText("محفوظ ●●●●" if secrets.get(CLOUDFLARE_TOKEN) else "لا يوجد token محفوظ")
         self._loading = False
         self._sync_elevated()
         self.refresh_tables()
+
+    def _discover_containers(self) -> None:
+        """Fill the container list from `docker ps` (local, or over ssh when a host is set)."""
+        current = self.monitor_container.currentText().strip()
+        try:
+            names = list_containers(self.monitor_ssh.text().strip())
+        except ContainerMetricsError as exc:
+            QMessageBox.warning(self, "اكتشاف الحاويات", f"تعذّر قراءة الحاويات: {exc}")
+            return
+        self.monitor_container.clear()
+        self.monitor_container.addItems(names)
+        self.monitor_container.setEditText(current)
+        if names:
+            self.monitor_container.showPopup()
+        else:
+            QMessageBox.information(self, "اكتشاف الحاويات", "لا توجد حاويات تعمل الآن.")
 
     def collect(self) -> Settings:
         settings = self.app.container.settings
@@ -208,6 +239,8 @@ class SettingsPage(QWidget):
         settings.k6_path = self.k6_path.text().strip()
         settings.locust_path = self.locust_path.text().strip()
         settings.zap_url = self.zap_url.text().strip().rstrip("/")
+        settings.monitor_container = self.monitor_container.currentText().strip()
+        settings.monitor_ssh_host = self.monitor_ssh.text().strip()
         return settings
 
     def save(self) -> None:

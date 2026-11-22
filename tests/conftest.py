@@ -78,6 +78,7 @@ def _server() -> LocalTestServer:
 def server(_server: LocalTestServer) -> LocalTestServer:
     _server.reset()
     _server.verify_token = ""
+    _server.expose_files = False
     return _server
 
 

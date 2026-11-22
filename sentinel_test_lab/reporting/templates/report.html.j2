@@ -100,7 +100,8 @@
     <tr>
       <td><span class="badge sev-{{ f.severity }}">{{ f.severity_label }}</span></td>
       <td><b>{{ f.title }}</b>{% if f.detail %}<br>{{ f.detail }}{% endif %}
-          {% if f.evidence %}<br><span class="evidence">{{ f.evidence }}</span>{% endif %}</td>
+          {% if f.evidence %}<br><span class="evidence">{{ f.evidence }}</span>{% endif %}
+          {% if f.cwe or f.owasp %}<br><span class="evidence">{{ f.cwe }}{% if f.cwe and f.owasp %} · {% endif %}{{ f.owasp }}</span>{% endif %}</td>
       <td>{{ f.recommendation or "—" }}</td>
     </tr>
     {% endfor %}

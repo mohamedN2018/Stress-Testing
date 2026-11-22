@@ -229,7 +229,8 @@ class MetricsCollector:
         with self._lock:
             return {name: phase.to_dict() for name, phase in self._phases.items()}
 
-    def tick(self, system: dict[str, Any] | None = None) -> dict[str, Any]:
+    def tick(self, system: dict[str, Any] | None = None,
+             extra: dict[str, Any] | None = None) -> dict[str, Any]:
         """Close the current sampling interval and append it to the series."""
         now = self._clock()
         with self._lock:
@@ -254,6 +255,8 @@ class MetricsCollector:
             }
             if system:
                 sample["system"] = system
+            if extra:
+                sample.update(extra)
             self._interval_counters = _Counters()
             self._interval_hist = LatencyHistogram()
             self._interval_start = now
