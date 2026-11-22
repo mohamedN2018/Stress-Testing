@@ -91,7 +91,7 @@ uv pip install --python .venv\Scripts\python.exe -r requirements-dev.txt
 ## بناء الملف التنفيذي
 
 ```powershell
-.venv\Scriptspython.exe -m PyInstaller sentinel.spec --noconfirm
+.venv\Scripts\python.exe -m PyInstaller sentinel.spec --noconfirm
 dist\SentinelTestLab\SentinelTestLab.exe --selftest   # كود الخروج 0 = سليم
 
 # فحص كامل: اختبار حمل حقيقي + تصدير التقارير من داخل الـ exe (على loopback فقط)

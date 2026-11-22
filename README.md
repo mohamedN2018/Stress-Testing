@@ -95,5 +95,5 @@ sentinel.spec        تعريف البناء (PyInstaller)
 ```powershell
 .venv\Scripts\python.exe -m pytest tests -q            # الاختبارات
 .venv\Scripts\python.exe -m tests.support.local_server # خادم تجريبي محلي
-.venv\Scriptspython.exe -m PyInstaller sentinel.spec --noconfirm # بناء الـ exe
+.venv\Scripts\python.exe -m PyInstaller sentinel.spec --noconfirm # بناء الـ exe
 ```
