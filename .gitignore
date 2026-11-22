@@ -1,0 +1,20 @@
+# Python
+.venv/
+__pycache__/
+*.pyc
+*.egg-info/
+.pytest_cache/
+
+# Build output (PyInstaller)
+build/
+dist/
+
+# Local, machine-specific
+*.lnk
+.claude/
+.vscode/
+.idea/
+.env
+.env.*
+result.json
+*.log

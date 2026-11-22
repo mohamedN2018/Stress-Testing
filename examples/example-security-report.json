@@ -1,0 +1,205 @@
+{
+  "generator": "Sentinel Test Lab 1.0.0",
+  "id": 2,
+  "name": "مثال: تقييم أمني للخادم المحلي",
+  "test_type": "security",
+  "target_id": 1,
+  "target_url": "http://127.0.0.1:61275",
+  "status": "completed",
+  "backend": "internal",
+  "started_at": "2026-11-22T00:25:52+00:00",
+  "finished_at": "2026-11-22T00:25:54+00:00",
+  "stop_reason": "",
+  "config": {
+    "test_type": "security",
+    "name": "مثال: تقييم أمني للخادم المحلي",
+    "users": 1,
+    "duration_s": 30,
+    "ramp_up_s": 0.0,
+    "requests_per_user": 0,
+    "interval_s": 1.0,
+    "method": "GET",
+    "paths": [
+      "/"
+    ],
+    "rate_limit_rps": 5,
+    "request_budget": 151,
+    "timeout_s": 5,
+    "thresholds": {
+      "max_error_rate": 0.25,
+      "max_p95_ms": 8000.0,
+      "max_consecutive_failures": 15,
+      "min_samples": 20,
+      "window_s": 5.0
+    },
+    "backend": "internal",
+    "extra": {}
+  },
+  "summary": {
+    "elapsed_s": 1.27,
+    "total": 7,
+    "success": 4,
+    "failed": 3,
+    "s2xx": 4,
+    "s3xx": 0,
+    "s4xx": 3,
+    "s5xx": 0,
+    "s429": 0,
+    "transport_errors": 0,
+    "aborted": 0,
+    "rps": 5.51,
+    "avg_ms": 4.37,
+    "p50_ms": 3.0,
+    "p90_ms": 9.67,
+    "p95_ms": 9.67,
+    "p99_ms": 9.67,
+    "min_ms": 2.59,
+    "max_ms": 9.67,
+    "error_rate": 0.4286,
+    "error_kinds": {},
+    "peak_rps": 4.78,
+    "peak_users": 0,
+    "max_sustainable_tested_users": null,
+    "request_budget": 151,
+    "metrics_host_scope": "target_and_generator"
+  },
+  "details": {
+    "pages": [
+      {
+        "path": "/",
+        "status": 200,
+        "headers": {
+          "server": "TestServer/1.0",
+          "x-powered-by": "TestStack 2.3",
+          "content-type": "text/html; charset=utf-8",
+          "set-cookie": "sessionid=abc123; Path=/",
+          "content-length": "50",
+          "date": "Sun, 22 Nov 2026 00:25:53 GMT"
+        },
+        "cookies": 1
+      }
+    ],
+    "zap": {
+      "status": "لم يُطلب"
+    },
+    "misconfiguration_checks": {
+      "not_found_status": 404,
+      "/.git/HEAD": false,
+      "/.env": false,
+      "cors_allow_origin": "https://sentinel-cors-probe.example",
+      "security_txt": true
+    },
+    "tls": {
+      "available": false,
+      "note": "الهدف ليس HTTPS"
+    }
+  },
+  "series": [
+    {
+      "t": 1.05,
+      "users": 0,
+      "phase": "",
+      "rps": 4.78,
+      "requests": 7,
+      "failed": 3,
+      "s2xx": 4,
+      "s3xx": 0,
+      "s4xx": 3,
+      "s5xx": 0,
+      "s429": 0,
+      "avg_ms": 4.37,
+      "p95_ms": 9.67,
+      "error_rate": 0.4286,
+      "system": {
+        "cpu_percent": 21.4,
+        "ram_percent": 49.3,
+        "ram_used_mb": 32188.8,
+        "disk_percent": 73.0,
+        "net_sent_kbps": 101.8,
+        "net_recv_kbps": 2414.7
+      }
+    }
+  ],
+  "findings": [
+    {
+      "severity": "high",
+      "category": "misconfiguration",
+      "title": "CORS يعكس أي Origin مع السماح بالـ credentials",
+      "detail": "أي موقع خارجي يستطيع قراءة ردود المستخدم المسجَّل.",
+      "recommendation": "قيّد Access-Control-Allow-Origin بقائمة نطاقات محددة.",
+      "evidence": "ACAO: https://sentinel-cors-probe.example"
+    },
+    {
+      "severity": "medium",
+      "category": "headers",
+      "title": "ترويسة Content-Security-Policy غير موجودة",
+      "detail": "لا توجد سياسة تحد من مصادر السكربتات (تخفيف XSS).",
+      "recommendation": "عرّف CSP تبدأ بـ default-src 'self' وشدّدها تدريجياً.",
+      "evidence": ""
+    },
+    {
+      "severity": "medium",
+      "category": "headers",
+      "title": "ترويسة X-Frame-Options غير موجودة",
+      "detail": "الصفحة قابلة للتضمين داخل iframe (Clickjacking).",
+      "recommendation": "أضف X-Frame-Options: DENY أو CSP frame-ancestors 'none'.",
+      "evidence": ""
+    },
+    {
+      "severity": "medium",
+      "category": "cookies",
+      "title": "الكوكي «sessionid»: بدون HttpOnly، بدون SameSite",
+      "detail": "خصائص الكوكي الناقصة تسهّل سرقتها أو إساءة استخدامها (XSS/CSRF/اعتراض).",
+      "recommendation": "عيّن Secure و HttpOnly و SameSite=Lax (أو Strict) لكوكيز الجلسات.",
+      "evidence": "sessionid"
+    },
+    {
+      "severity": "low",
+      "category": "headers",
+      "title": "ترويسة X-Content-Type-Options غير موجودة",
+      "detail": "المتصفح قد يخمّن نوع المحتوى (MIME sniffing).",
+      "recommendation": "أضف X-Content-Type-Options: nosniff",
+      "evidence": ""
+    },
+    {
+      "severity": "low",
+      "category": "headers",
+      "title": "ترويسة Referrer-Policy غير موجودة",
+      "detail": "قد تتسرب عناوين الصفحات إلى مواقع خارجية.",
+      "recommendation": "أضف Referrer-Policy: strict-origin-when-cross-origin",
+      "evidence": ""
+    },
+    {
+      "severity": "low",
+      "category": "information-disclosure",
+      "title": "الترويسة server تكشف معلومات عن الخادم",
+      "detail": "معرفة التقنية والإصدار تسهّل استهداف ثغرات معروفة.",
+      "recommendation": "أخفِ أو عمّم هذه الترويسة من إعدادات الخادم.",
+      "evidence": "server: TestServer/1.0"
+    },
+    {
+      "severity": "low",
+      "category": "information-disclosure",
+      "title": "الترويسة x-powered-by تكشف معلومات عن الخادم",
+      "detail": "معرفة التقنية والإصدار تسهّل استهداف ثغرات معروفة.",
+      "recommendation": "أخفِ أو عمّم هذه الترويسة من إعدادات الخادم.",
+      "evidence": "x-powered-by: TestStack 2.3"
+    },
+    {
+      "severity": "low",
+      "category": "tls",
+      "title": "الهدف يعمل عبر HTTP بدون تشفير",
+      "detail": "كل البيانات تنتقل كنص صريح.",
+      "recommendation": "فعّل HTTPS بشهادة صالحة وحوّل HTTP إليه.",
+      "evidence": ""
+    },
+    {
+      "severity": "info",
+      "category": "headers",
+      "title": "ترويسة Permissions-Policy غير موجودة",
+      "detail": "لا توجد قيود على واجهات المتصفح (كاميرا، موقع...).",
+      "recommendation": "أضف Permissions-Policy بما يناسب تطبيقك.",
+      "evidence": ""
+    }
+  ]
+}

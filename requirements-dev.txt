@@ -1,0 +1,8 @@
+# Development, tests and packaging
+-r requirements.txt
+pytest==9.2.0
+pytest-asyncio==1.5.0
+pytest-qt==4.5.0
+aiohttp==3.14.5        # local test server
+pyinstaller==6.22.3    # Windows executable
+locust==2.47.0         # optional load backend (not bundled in the executable)

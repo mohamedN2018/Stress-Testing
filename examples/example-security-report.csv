@@ -1,0 +1,63 @@
+﻿section,key,value
+run,name,مثال: تقييم أمني للخادم المحلي
+run,target_url,http://127.0.0.1:61275
+run,test_type,تقييم الثغرات والإعدادات الأمنية
+run,status,مكتمل
+run,stop_reason,
+run,started_at,2026-11-22T00:25:52+00:00
+run,finished_at,2026-11-22T00:25:54+00:00
+config,المستخدمون الافتراضيون,1
+config,المدة (ث),30
+config,زمن التصعيد (ث),0
+config,طلبات لكل مستخدم,غير محدد (محكوم بالمدة والميزانية)
+config,الفاصل بين الطلبات (ث),1
+config,الطريقة,GET
+config,المسارات,/
+config,حد المعدل (طلب/ث),5
+config,ميزانية الطلبات,151
+config,مهلة الطلب (ث),5
+config,المحرك,المحرك الداخلي (httpx)
+config,أقصى نسبة أخطاء,25.0%
+config,أقصى p95 (ms),"8,000"
+config,أقصى إخفاقات متتالية,15
+summary,elapsed_s,1.27
+summary,total,7
+summary,success,4
+summary,failed,3
+summary,s2xx,4
+summary,s3xx,0
+summary,s4xx,3
+summary,s5xx,0
+summary,s429,0
+summary,transport_errors,0
+summary,aborted,0
+summary,rps,5.51
+summary,avg_ms,4.37
+summary,p50_ms,3.0
+summary,p90_ms,9.67
+summary,p95_ms,9.67
+summary,p99_ms,9.67
+summary,min_ms,2.59
+summary,max_ms,9.67
+summary,error_rate,0.4286
+summary,error_kinds,{}
+summary,peak_rps,4.78
+summary,peak_users,0
+summary,max_sustainable_tested_users,
+summary,request_budget,151
+summary,metrics_host_scope,target_and_generator
+
+severity,category,title,detail,recommendation,evidence
+high,misconfiguration,CORS يعكس أي Origin مع السماح بالـ credentials,أي موقع خارجي يستطيع قراءة ردود المستخدم المسجَّل.,قيّد Access-Control-Allow-Origin بقائمة نطاقات محددة.,ACAO: https://sentinel-cors-probe.example
+medium,headers,ترويسة Content-Security-Policy غير موجودة,لا توجد سياسة تحد من مصادر السكربتات (تخفيف XSS).,عرّف CSP تبدأ بـ default-src 'self' وشدّدها تدريجياً.,
+medium,headers,ترويسة X-Frame-Options غير موجودة,الصفحة قابلة للتضمين داخل iframe (Clickjacking).,أضف X-Frame-Options: DENY أو CSP frame-ancestors 'none'.,
+medium,cookies,الكوكي «sessionid»: بدون HttpOnly، بدون SameSite,خصائص الكوكي الناقصة تسهّل سرقتها أو إساءة استخدامها (XSS/CSRF/اعتراض).,عيّن Secure و HttpOnly و SameSite=Lax (أو Strict) لكوكيز الجلسات.,sessionid
+low,headers,ترويسة X-Content-Type-Options غير موجودة,المتصفح قد يخمّن نوع المحتوى (MIME sniffing).,أضف X-Content-Type-Options: nosniff,
+low,headers,ترويسة Referrer-Policy غير موجودة,قد تتسرب عناوين الصفحات إلى مواقع خارجية.,أضف Referrer-Policy: strict-origin-when-cross-origin,
+low,information-disclosure,الترويسة server تكشف معلومات عن الخادم,معرفة التقنية والإصدار تسهّل استهداف ثغرات معروفة.,أخفِ أو عمّم هذه الترويسة من إعدادات الخادم.,server: TestServer/1.0
+low,information-disclosure,الترويسة x-powered-by تكشف معلومات عن الخادم,معرفة التقنية والإصدار تسهّل استهداف ثغرات معروفة.,أخفِ أو عمّم هذه الترويسة من إعدادات الخادم.,x-powered-by: TestStack 2.3
+low,tls,الهدف يعمل عبر HTTP بدون تشفير,كل البيانات تنتقل كنص صريح.,فعّل HTTPS بشهادة صالحة وحوّل HTTP إليه.,
+info,headers,ترويسة Permissions-Policy غير موجودة,لا توجد قيود على واجهات المتصفح (كاميرا، موقع...).,أضف Permissions-Policy بما يناسب تطبيقك.,
+
+t,phase,users,rps,requests,failed,s2xx,s3xx,s4xx,s5xx,s429,avg_ms,p95_ms,error_rate,cpu_percent,ram_percent,ram_used_mb,disk_percent,net_sent_kbps,net_recv_kbps
+1.05,,0,4.78,7,3,4,0,3,0,0,4.37,9.67,0.4286,21.4,49.3,32188.8,73.0,101.8,2414.7

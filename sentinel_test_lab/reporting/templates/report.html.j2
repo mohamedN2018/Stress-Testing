@@ -1,0 +1,130 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>{{ name }} — {{ app_name }}</title>
+<style>
+  :root { --ink:#0f172a; --muted:#64748b; --line:#e2e8f0; --bg:#f8fafc; --card:#ffffff; --accent:#0e7490;
+          --high:#dc2626; --medium:#d97706; --low:#2563eb; --info:#64748b; --ok:#16a34a; }
+  * { box-sizing: border-box; }
+  body { margin:0; background:var(--bg); color:var(--ink); line-height:1.7;
+         font-family:"Segoe UI", Tahoma, "Noto Sans Arabic", Arial, sans-serif; font-size:15px; }
+  .page { max-width: 980px; margin: 0 auto; padding: 32px 20px 48px; }
+  header { border-bottom: 3px solid var(--accent); padding-bottom: 16px; margin-bottom: 24px; }
+  .brand { color:var(--accent); font-weight:600; font-size:13px; letter-spacing:.3px; }
+  h1 { margin: 4px 0 10px; font-size: 26px; }
+  h2 { font-size: 18px; margin: 34px 0 12px; padding-inline-start: 10px; border-inline-start: 4px solid var(--accent); }
+  .meta { display:flex; flex-wrap:wrap; gap:6px 22px; color:var(--muted); font-size:14px; }
+  .meta b { color:var(--ink); font-weight:600; }
+  .url { direction:ltr; unicode-bidi:embed; font-family:Consolas, monospace; }
+  .badge { display:inline-block; padding:1px 10px; border-radius:999px; font-size:13px; font-weight:600; color:#fff; white-space:nowrap; }
+  .st-completed { background:var(--ok); } .st-stopped { background:var(--info); }
+  .st-auto_stopped { background:var(--medium); } .st-failed { background:var(--high); } .st-running { background:var(--low); }
+  .sev-high { background:var(--high); } .sev-medium { background:var(--medium); }
+  .sev-low { background:var(--low); } .sev-info { background:var(--info); }
+  .summary { background:var(--card); border:1px solid var(--line); border-radius:10px; padding:14px 20px; }
+  .summary p { margin: 6px 0; }
+  .cards { display:grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap:10px; }
+  .card { background:var(--card); border:1px solid var(--line); border-radius:10px; padding:10px 14px; }
+  .card .k { color:var(--muted); font-size:13px; } .card .v { font-size:19px; font-weight:600; }
+  .highlight { background:#ecfeff; border:1px solid #a5f3fc; border-radius:10px; padding:12px 18px; margin-top:12px; }
+  table { width:100%; border-collapse:collapse; background:var(--card); border:1px solid var(--line); border-radius:10px; overflow:hidden; }
+  th, td { padding:8px 12px; text-align:start; border-bottom:1px solid var(--line); vertical-align:top; overflow-wrap:anywhere; }
+  th { background:#f1f5f9; font-size:13px; color:var(--muted); font-weight:600; }
+  tr:last-child td { border-bottom:0; }
+  .table-wrap { overflow-x:auto; margin-bottom:8px; }
+  h3 { font-size:15px; margin:20px 0 8px; }
+  .note { color:var(--muted); font-size:13px; margin:4px 2px 14px; }
+  .chart { background:var(--card); border:1px solid var(--line); border-radius:10px; padding:12px; margin-bottom:14px; }
+  .chart svg { width:100%; height:auto; display:block; }
+  .chart .t { font-weight:600; margin-bottom:6px; }
+  .evidence { direction:ltr; unicode-bidi:embed; font-family:Consolas, monospace; font-size:12px; color:var(--muted); }
+  ul { padding-inline-start: 22px; margin: 6px 0; }
+  footer { margin-top:36px; padding-top:12px; border-top:1px solid var(--line); color:var(--muted); font-size:13px; }
+  @media print { body { background:#fff; } .page { padding:0; } .chart, table, .summary { break-inside: avoid; } }
+</style>
+</head>
+<body>
+<div class="page">
+  <header>
+    <div class="brand">{{ app_name }} · تقرير اختبار</div>
+    <h1>{{ name }}</h1>
+    <div class="meta">
+      <span>الموقع: <b class="url">{{ target_url }}</b></span>
+      <span>النوع: <b>{{ type_label }}</b></span>
+      <span>البداية: <b>{{ started }}</b></span>
+      <span>المدة: <b>{{ duration }}</b></span>
+      <span>الحالة: <span class="badge st-{{ status }}">{{ status_label }}</span></span>
+    </div>
+  </header>
+
+  <h2>الملخص التنفيذي</h2>
+  <div class="summary">
+    {% for line in summary_lines %}<p>{{ line }}</p>{% endfor %}
+  </div>
+  {% if sustainable is not none %}
+  <div class="highlight"><b>أعلى تزامن مستدام تم اختباره:</b> {{ sustainable }}</div>
+  {% endif %}
+
+  <h2>النتائج الرقمية</h2>
+  <div class="cards">
+    {% for k, v in cards %}<div class="card"><div class="k">{{ k }}</div><div class="v">{{ v }}</div></div>{% endfor %}
+  </div>
+
+  {% if charts %}
+  <h2>الرسوم البيانية</h2>
+  {% for title, svg in charts %}
+  <div class="chart"><div class="t">{{ title }}</div>{{ svg }}</div>
+  {% endfor %}
+  {% endif %}
+
+  {% if tables %}
+  <h2>تفاصيل الاختبار</h2>
+  {% for table in tables %}
+  <h3>{{ table.title }}</h3>
+  <div class="table-wrap"><table>
+    <thead><tr>{% for h in table.headers %}<th>{{ h }}</th>{% endfor %}</tr></thead>
+    <tbody>{% for row in table.rows %}<tr>{% for cell in row %}<td>{{ cell }}</td>{% endfor %}</tr>{% endfor %}</tbody>
+  </table></div>
+  {% if table.note %}<div class="note">{{ table.note }}</div>{% endif %}
+  {% endfor %}
+  {% endif %}
+
+  <h2>الملاحظات والمشاكل المرصودة</h2>
+  {% if findings %}
+  <div class="table-wrap"><table>
+    <thead><tr><th style="width:90px">الخطورة</th><th>الملاحظة</th><th>التوصية</th></tr></thead>
+    <tbody>
+    {% for f in findings %}
+    <tr>
+      <td><span class="badge sev-{{ f.severity }}">{{ f.severity_label }}</span></td>
+      <td><b>{{ f.title }}</b>{% if f.detail %}<br>{{ f.detail }}{% endif %}
+          {% if f.evidence %}<br><span class="evidence">{{ f.evidence }}</span>{% endif %}</td>
+      <td>{{ f.recommendation or "—" }}</td>
+    </tr>
+    {% endfor %}
+    </tbody>
+  </table></div>
+  {% else %}
+  <p class="note">لم تُسجَّل ملاحظات في هذا التشغيل.</p>
+  {% endif %}
+
+  {% if recommendations %}
+  <h2>التوصيات</h2>
+  <ul>{% for r in recommendations %}<li>{{ r }}</li>{% endfor %}</ul>
+  {% endif %}
+
+  <h2>إعدادات الاختبار</h2>
+  <div class="table-wrap"><table>
+    <tbody>{% for k, v in config %}<tr><th style="width:38%">{{ k }}</th><td>{{ v }}</td></tr>{% endfor %}</tbody>
+  </table></div>
+
+  <h2>حدود هذا التقرير</h2>
+  <ul>{% for l in limitations %}<li>{{ l }}</li>{% endfor %}</ul>
+
+  <footer>أُنشئ بواسطة {{ app_name }} {{ version }} في {{ generated_at }} · رقم التشغيل {{ run_id }} ·
+    الاختبار أُجري على هدف صرّح المستخدم بملكيته أو بتفويضه لاختباره.</footer>
+</div>
+</body>
+</html>

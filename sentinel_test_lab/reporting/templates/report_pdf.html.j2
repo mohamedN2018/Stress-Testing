@@ -1,0 +1,67 @@
+<html dir="rtl"><body dir="rtl" style="font-family:'Segoe UI','Tahoma'; font-size:10pt; color:#0f172a;">
+<p dir="rtl" style="color:#0e7490; font-size:9pt; margin:0;">{{ app_name }} · تقرير اختبار</p>
+<h1 dir="rtl" style="font-size:19pt; margin-top:2px; margin-bottom:4px;">{{ name }}</h1>
+<table dir="rtl" width="100%" cellpadding="4" cellspacing="0" style="margin-bottom:6px;">
+<tr><td width="18%" style="color:#64748b;">الموقع</td><td>{{ target_url }}</td></tr>
+<tr><td style="color:#64748b;">النوع</td><td>{{ type_label }}</td></tr>
+<tr><td style="color:#64748b;">البداية / المدة</td><td>{{ started }} — {{ duration }}</td></tr>
+<tr><td style="color:#64748b;">الحالة</td><td><b style="color:{{ status_color }};">{{ status_label }}</b></td></tr>
+</table>
+<hr>
+
+<h2 dir="rtl" style="font-size:13pt; color:#0e7490;">الملخص التنفيذي</h2>
+{% for line in summary_lines %}<p dir="rtl" style="margin:3px 0;">{{ line }}</p>{% endfor %}
+{% if sustainable is not none %}
+<p dir="rtl" style="background-color:#ecfeff; margin-top:6px;"><b>أعلى تزامن مستدام تم اختباره:</b> {{ sustainable }}</p>
+{% endif %}
+
+<h2 dir="rtl" style="font-size:13pt; color:#0e7490;">النتائج الرقمية</h2>
+<table dir="rtl" width="100%" cellpadding="5" cellspacing="0" border="1" style="border-color:#cbd5e1; border-collapse:collapse;">
+{% for row in card_rows %}
+<tr>{% for k, v in row %}<td width="13%" bgcolor="#f1f5f9" style="color:#64748b; font-size:9pt;">{{ k }}</td><td width="12%"><b>{{ v }}</b></td>{% endfor %}</tr>
+{% endfor %}
+</table>
+
+{% if chart_names %}
+<h2 dir="rtl" style="font-size:13pt; color:#0e7490;">الرسوم البيانية</h2>
+{% for title, src in chart_names %}
+<p dir="rtl" style="margin-top:10px;"><b>{{ title }}</b><br><img src="{{ src }}" width="{{ chart_width }}"></p>
+{% endfor %}
+{% endif %}
+
+{% if tables %}
+<h2 dir="rtl" style="font-size:13pt; color:#0e7490;">تفاصيل الاختبار</h2>
+{% for table in tables %}
+<p dir="rtl" style="margin-bottom:3px;"><b>{{ table.title }}</b></p>
+<table dir="rtl" width="100%" cellpadding="4" cellspacing="0" border="1" style="border-color:#cbd5e1; border-collapse:collapse;">
+<tr>{% for h in table.headers %}<th bgcolor="#f1f5f9" align="right" style="color:#475569; font-size:9pt;">{{ h }}</th>{% endfor %}</tr>
+{% for row in table.rows %}<tr>{% for cell in row %}<td>{{ cell }}</td>{% endfor %}</tr>{% endfor %}
+</table>
+{% if table.note %}<p dir="rtl" style="color:#64748b; font-size:9pt;">{{ table.note }}</p>{% endif %}
+{% endfor %}
+{% endif %}
+
+<h2 dir="rtl" style="font-size:13pt; color:#0e7490;">الملاحظات والمشاكل المرصودة</h2>
+{% if findings %}
+<table dir="rtl" width="100%" cellpadding="4" cellspacing="0" border="1" style="border-color:#cbd5e1; border-collapse:collapse;">
+<tr><th bgcolor="#f1f5f9" width="11%" align="right">الخطورة</th><th bgcolor="#f1f5f9" width="49%" align="right">الملاحظة</th><th bgcolor="#f1f5f9" width="40%" align="right">التوصية</th></tr>
+{% for f in findings %}
+<tr><td><b style="color:{{ severity_colors[f.severity] }};">{{ f.severity_label }}</b></td>
+<td><b>{{ f.title }}</b>{% if f.detail %}<br>{{ f.detail }}{% endif %}</td>
+<td>{{ f.recommendation or "—" }}</td></tr>
+{% endfor %}
+</table>
+{% else %}
+<p dir="rtl" style="color:#64748b;">لم تُسجَّل ملاحظات في هذا التشغيل.</p>
+{% endif %}
+
+<h2 dir="rtl" style="font-size:13pt; color:#0e7490;">إعدادات الاختبار</h2>
+<table dir="rtl" width="100%" cellpadding="4" cellspacing="0" border="1" style="border-color:#cbd5e1; border-collapse:collapse;">
+{% for k, v in config %}<tr><td width="38%" bgcolor="#f1f5f9">{{ k }}</td><td>{{ v }}</td></tr>{% endfor %}
+</table>
+
+<h2 dir="rtl" style="font-size:13pt; color:#0e7490;">حدود هذا التقرير</h2>
+{% for l in limitations %}<p dir="rtl" style="margin:2px 0;">• {{ l }}</p>{% endfor %}
+<hr>
+<p dir="rtl" style="color:#64748b; font-size:8pt;">أُنشئ بواسطة {{ app_name }} {{ version }} في {{ generated_at }} · رقم التشغيل {{ run_id }} · الاختبار أُجري على هدف صرّح المستخدم بملكيته أو بتفويضه لاختباره.</p>
+</body></html>
